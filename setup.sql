@@ -864,39 +864,38 @@ CREATE OR REPLACE GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo
 ALTER GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo FETCH;
 
 -- 8.4 リポジトリ内のファイル一覧を確認
--- (実行後に assets/ 配下のファイルが見えることを確認)
 LIST @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/;
 
-/*--
-    ※ セクション 2(a) / 2(b) でのデータロードは、以下のように
-    Git リポジトリのパスを直接参照して COPY INTO できます:
+-- 8.5 Git リポジトリから内部ステージへファイルを転送
+-- (Git Repository Stage → 直接 COPY INTO テーブルは非対応のため、内部ステージ経由)
+-- 転送後、セクション 2(a) / 2(b) で COPY INTO テーブルを実行します。
 
-    -- XML (SWIFT MX 電文) の取り込み例:
-    COPY INTO fsi_zts_101.raw_trade.swift_messages_xml (message_id, received_at, message_type, payload, source_file)
-    FROM (
-      SELECT
-        METADATA$FILENAME || '-' || METADATA$FILE_ROW_NUMBER,
-        CURRENT_TIMESTAMP(),
-        CASE WHEN METADATA$FILENAME ILIKE '%pacs_008%' THEN 'pacs.008'
-             WHEN METADATA$FILENAME ILIKE '%camt_053%' THEN 'camt.053'
-             ELSE 'unknown' END,
-        $1,
-        METADATA$FILENAME
-      FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/swift_xml/
-    )
-    FILE_FORMAT = (TYPE = 'XML');
+-- XML (SWIFT MX 電文: pacs.008 x5, camt.053 x2)
+COPY FILES
+  INTO @fsi_zts_101.raw_trade.xml_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/swift_xml/;
 
-    -- CSV の取り込み例:
-    COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
-    FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/
-    FILE_FORMAT = fsi_zts_101.public.csv_ff;
+-- CSV (貿易取引サンプル 200 行)
+COPY FILES
+  INTO @fsi_zts_101.raw_trade.csv_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
 
-    -- Excel の取り込み例 (Stored Procedure 経由):
-    CALL fsi_zts_101.raw_excel.load_excel_to_table(
-      'fsi_zts_101.public.fsi_zts_repo/branches/main/assets/excel/corporate_sales_data.xlsx',
-      'fsi_zts_101.raw_excel.corporate_sales'
-    );
---*/
+-- JSON (顧客サンプル 50 件)
+COPY FILES
+  INTO @fsi_zts_101.raw_trade.json_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/customer_json/;
+
+-- Excel (法人営業データ 100 行)
+COPY FILES
+  INTO @fsi_zts_101.raw_excel.excel_demo_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/excel/
+  FILES = ('corporate_sales_data.xlsx');
+
+-- 転送結果確認
+LIST @fsi_zts_101.raw_trade.xml_stage;
+LIST @fsi_zts_101.raw_trade.csv_stage;
+LIST @fsi_zts_101.raw_trade.json_stage;
+LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
 /*--
  9. ウェアハウスのスケールダウン (コスト最適化)
