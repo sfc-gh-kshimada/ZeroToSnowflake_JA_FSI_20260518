@@ -1,0 +1,20 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Snowflake CLI
+.cortex/
+
+# 顧客固有 (公開対象外)
+internal_talking_points.md

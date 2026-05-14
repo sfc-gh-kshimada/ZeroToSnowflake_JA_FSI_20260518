@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.08">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>STMT202605140002</MsgId>
+      <CreDtTm>2026-05-13T09:00:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT202605140002</Id>
+      <LglSeqNb>1</LglSeqNb>
+      <CreDtTm>2026-05-18T09:00:00</CreDtTm>
+      <Acct>
+        <Id><IBAN>JP1234567802</IBAN></Id>
+        <Ccy>JPY</Ccy>
+      </Acct>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="JPY">1520676728</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-05-01</Dt></Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="EUR">42939162</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-17</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 1 - Payment ref #7873</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">25233721</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-06</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 2 - Payment ref #2353</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">32775651</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-06</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 3 - Payment ref #6487</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">22710060</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-03</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 4 - Payment ref #8483</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">26115128</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-01</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 5 - Payment ref #4097</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="JPY">39439333</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-01</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 6 - Payment ref #6765</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="USD">15476638</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>
+          <Cd>BOOK</Cd>
+        </Sts>
+        <BookgDt><Dt>2026-05-10</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <RmtInf><Ustrd>Entry 7 - Payment ref #9106</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

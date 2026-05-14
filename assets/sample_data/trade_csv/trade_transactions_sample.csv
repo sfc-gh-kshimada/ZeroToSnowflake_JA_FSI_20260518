@@ -1,0 +1,201 @@
+transaction_id,trade_date,settlement_date,customer_id,counterparty_country,transaction_type,currency_code,amount,booking_branch,instrument_type,free_text_notes
+TX-20251024-000001,2025-10-24,2025-11-07,205,KR,IMPORT,GBP,1249672.28,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250820-000002,2025-08-20,2025-09-12,718,CN,IMPORT,CNY,1005345.94,NewYork,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250603-000003,2025-06-03,2025-06-11,156,FR,REMITTANCE,EUR,4251336.29,London,LC,High-priority client. Premium handling.
+TX-20250606-000004,2025-06-06,2025-07-02,90,FR,EXPORT,AUD,222830.83,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20251114-000005,2025-11-14,2025-12-03,83,FR,REMITTANCE,GBP,3031490.55,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260128-000006,2026-01-28,2026-02-21,165,IN,EXPORT,EUR,4720113.87,NewYork,LC,Standard transaction. No issues reported.
+TX-20260507-000007,2026-05-07,2026-05-14,486,TH,EXPORT,USD,4684045.54,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250706-000008,2025-07-06,2025-07-08,391,AU,IMPORT,AUD,1011964.12,Tokyo,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20251004-000009,2025-10-04,2025-10-14,559,DE,IMPORT,HKD,4707348.71,Singapore,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250715-000010,2025-07-15,2025-08-10,766,GB,REMITTANCE,AUD,630591.07,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260218-000011,2026-02-18,2026-02-25,420,GB,IMPORT,HKD,3855130.09,NewYork,TT,Standard transaction. No issues reported.
+TX-20251114-000012,2025-11-14,2025-11-21,695,US,REMITTANCE,SGD,65630.99,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20251106-000013,2025-11-06,2025-11-20,345,DE,EXPORT,AUD,4070306.2,Tokyo,LC,Standard transaction. No issues reported.
+TX-20251109-000014,2025-11-09,2025-12-04,878,DE,EXPORT,GBP,1563979.63,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260325-000015,2026-03-25,2026-04-23,705,IN,EXPORT,GBP,3822326.45,NewYork,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251006-000016,2025-10-06,2025-11-01,983,US,EXPORT,AUD,4819395.19,London,LC,High-priority client. Premium handling.
+TX-20251219-000017,2025-12-19,2026-01-11,896,AU,EXPORT,EUR,4649855.45,London,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251021-000018,2025-10-21,2025-11-13,847,KR,IMPORT,SGD,1901003.87,Singapore,LC,Customer disputed amount; resolved after reconciliation.
+TX-20251127-000019,2025-11-27,2025-12-27,203,AU,IMPORT,HKD,3474744.07,NewYork,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250625-000020,2025-06-25,2025-07-05,673,DE,REMITTANCE,GBP,2047146.77,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260517-000021,2026-05-17,2026-05-22,514,CN,IMPORT,JPY,2615279.69,NewYork,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260202-000022,2026-02-02,2026-02-12,767,IN,EXPORT,CNY,2806262.26,London,LC,Standard transaction. No issues reported.
+TX-20260326-000023,2026-03-26,2026-04-22,315,US,REMITTANCE,JPY,4806078.19,Singapore,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250806-000024,2025-08-06,2025-08-28,972,IN,REMITTANCE,SGD,978079.39,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20260219-000025,2026-02-19,2026-03-01,472,AU,IMPORT,EUR,4509820.36,Singapore,TT,High-priority client. Premium handling.
+TX-20260216-000026,2026-02-16,2026-03-01,257,SG,EXPORT,CNY,2867591.68,Singapore,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250729-000027,2025-07-29,2025-08-28,641,FR,REMITTANCE,EUR,4902373.14,NewYork,TT,High-priority client. Premium handling.
+TX-20260511-000028,2026-05-11,2026-05-16,338,FR,IMPORT,HKD,3279360.05,Tokyo,DOC_COLL,High-priority client. Premium handling.
+TX-20251229-000029,2025-12-29,2026-01-20,13,KR,EXPORT,AUD,1315071.5,NewYork,DOC_COLL,Standard transaction. No issues reported.
+TX-20251027-000030,2025-10-27,2025-10-30,49,AU,REMITTANCE,GBP,2780776.14,London,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260419-000031,2026-04-19,2026-05-13,794,DE,IMPORT,GBP,594665.0,NewYork,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250616-000032,2025-06-16,2025-06-29,73,CN,IMPORT,EUR,3512079.07,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20260315-000033,2026-03-15,2026-04-12,141,GB,REMITTANCE,USD,175090.44,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260120-000034,2026-01-20,2026-02-10,623,KR,IMPORT,HKD,3868142.22,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260211-000035,2026-02-11,2026-02-22,184,IN,IMPORT,EUR,2487821.52,Tokyo,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250603-000036,2025-06-03,2025-06-30,100,SG,REMITTANCE,CNY,3667686.63,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20251003-000037,2025-10-03,2025-10-16,260,AU,REMITTANCE,JPY,2925876.57,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260312-000038,2026-03-12,2026-03-14,903,HK,REMITTANCE,SGD,1457610.53,Singapore,TT,Standard transaction. No issues reported.
+TX-20260428-000039,2026-04-28,2026-05-11,168,KR,REMITTANCE,HKD,4234438.37,London,LC,Customer disputed amount; resolved after reconciliation.
+TX-20251231-000040,2025-12-31,2026-01-21,233,CN,IMPORT,JPY,3820867.8,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20251016-000041,2025-10-16,2025-11-03,733,SG,IMPORT,AUD,4958287.85,NewYork,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260224-000042,2026-02-24,2026-03-24,581,US,EXPORT,JPY,2832152.46,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20260215-000043,2026-02-15,2026-03-09,308,JP,EXPORT,EUR,2902973.39,Singapore,LC,Standard transaction. No issues reported.
+TX-20250623-000044,2025-06-23,2025-06-26,516,DE,EXPORT,USD,836524.72,NewYork,TT,Customer disputed amount; resolved after reconciliation.
+TX-20260312-000045,2026-03-12,2026-03-29,939,KR,IMPORT,HKD,2514792.02,NewYork,DOC_COLL,High-priority client. Premium handling.
+TX-20250912-000046,2025-09-12,2025-09-20,733,US,EXPORT,GBP,4532081.53,NewYork,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260111-000047,2026-01-11,2026-01-18,862,TH,EXPORT,EUR,3260850.44,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250823-000048,2025-08-23,2025-09-01,704,IN,EXPORT,AUD,2626620.89,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251204-000049,2025-12-04,2025-12-30,579,AU,EXPORT,GBP,494219.91,Tokyo,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260417-000050,2026-04-17,2026-04-29,195,JP,REMITTANCE,SGD,933735.77,London,LC,High-priority client. Premium handling.
+TX-20250820-000051,2025-08-20,2025-08-31,201,IN,EXPORT,USD,804884.7,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250820-000052,2025-08-20,2025-08-30,203,FR,IMPORT,JPY,1781197.1,NewYork,DOC_COLL,Standard transaction. No issues reported.
+TX-20251105-000053,2025-11-05,2025-11-07,368,AU,EXPORT,GBP,2696191.1,Tokyo,LC,Standard transaction. No issues reported.
+TX-20260217-000054,2026-02-17,2026-02-25,228,AU,REMITTANCE,SGD,3805087.73,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20251008-000055,2025-10-08,2025-10-13,674,DE,IMPORT,HKD,2490874.53,Singapore,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251202-000056,2025-12-02,2025-12-26,354,US,EXPORT,GBP,331474.57,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251203-000057,2025-12-03,2025-12-24,105,HK,EXPORT,GBP,1071098.02,Singapore,DOC_COLL,Standard transaction. No issues reported.
+TX-20250714-000058,2025-07-14,2025-08-08,269,US,EXPORT,USD,3691160.52,London,TT,Customer disputed amount; resolved after reconciliation.
+TX-20251012-000059,2025-10-12,2025-11-08,952,AU,REMITTANCE,GBP,3028814.01,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20260201-000060,2026-02-01,2026-02-05,606,HK,EXPORT,CNY,1699063.58,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20260424-000061,2026-04-24,2026-05-14,86,TH,IMPORT,AUD,969939.24,Tokyo,LC,Standard transaction. No issues reported.
+TX-20251205-000062,2025-12-05,2025-12-13,209,TH,REMITTANCE,USD,73473.15,Singapore,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260310-000063,2026-03-10,2026-04-07,793,IN,EXPORT,EUR,3531260.97,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20251016-000064,2025-10-16,2025-10-30,647,US,IMPORT,SGD,4743510.64,London,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20251229-000065,2025-12-29,2026-01-23,127,JP,REMITTANCE,USD,1261554.77,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250716-000066,2025-07-16,2025-08-02,223,CN,EXPORT,CNY,1268890.62,London,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250925-000067,2025-09-25,2025-10-06,153,SG,EXPORT,EUR,4011852.32,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250714-000068,2025-07-14,2025-08-01,73,SG,REMITTANCE,AUD,3908964.29,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250725-000069,2025-07-25,2025-08-21,85,JP,EXPORT,USD,2134533.16,Tokyo,LC,Standard transaction. No issues reported.
+TX-20260208-000070,2026-02-08,2026-03-09,956,US,IMPORT,SGD,966418.1,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250521-000071,2025-05-21,2025-06-01,178,CN,REMITTANCE,GBP,454097.65,Tokyo,TT,Standard transaction. No issues reported.
+TX-20260127-000072,2026-01-27,2026-02-07,415,AU,REMITTANCE,JPY,2220603.02,London,TT,High-priority client. Premium handling.
+TX-20250707-000073,2025-07-07,2025-07-20,224,AU,IMPORT,JPY,3518286.78,NewYork,LC,High-priority client. Premium handling.
+TX-20250713-000074,2025-07-13,2025-07-28,736,FR,IMPORT,HKD,2791341.37,London,LC,Standard transaction. No issues reported.
+TX-20250712-000075,2025-07-12,2025-08-01,353,GB,IMPORT,AUD,238502.71,London,DOC_COLL,High-priority client. Premium handling.
+TX-20251220-000076,2025-12-20,2026-01-17,372,GB,REMITTANCE,HKD,3468259.81,Tokyo,DOC_COLL,High-priority client. Premium handling.
+TX-20251218-000077,2025-12-18,2025-12-21,684,AU,EXPORT,GBP,3182202.87,Tokyo,LC,Standard transaction. No issues reported.
+TX-20250917-000078,2025-09-17,2025-10-01,440,CN,REMITTANCE,AUD,1869402.57,Singapore,TT,Standard transaction. No issues reported.
+TX-20260203-000079,2026-02-03,2026-03-01,361,GB,IMPORT,SGD,3408352.41,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20251209-000080,2025-12-09,2025-12-29,243,KR,IMPORT,SGD,4969923.57,London,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260310-000081,2026-03-10,2026-04-02,909,GB,EXPORT,JPY,2745077.7,London,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20251020-000082,2025-10-20,2025-11-07,566,GB,EXPORT,SGD,2176721.03,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260503-000083,2026-05-03,2026-06-02,504,SG,EXPORT,USD,2503939.7,London,LC,High-priority client. Premium handling.
+TX-20260429-000084,2026-04-29,2026-05-05,465,US,EXPORT,EUR,4826015.01,London,DOC_COLL,High-priority client. Premium handling.
+TX-20260428-000085,2026-04-28,2026-05-02,16,SG,REMITTANCE,JPY,2260676.41,Singapore,TT,Standard transaction. No issues reported.
+TX-20260128-000086,2026-01-28,2026-02-22,46,KR,IMPORT,EUR,4926543.06,Singapore,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250810-000087,2025-08-10,2025-08-26,296,KR,IMPORT,JPY,1514919.84,Tokyo,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250731-000088,2025-07-31,2025-08-14,869,AU,EXPORT,EUR,1428330.82,London,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250530-000089,2025-05-30,2025-06-02,807,AU,REMITTANCE,HKD,2685991.57,NewYork,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250606-000090,2025-06-06,2025-06-16,182,CN,EXPORT,CNY,4205762.48,Singapore,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260105-000091,2026-01-05,2026-01-26,311,FR,IMPORT,EUR,3854010.52,Tokyo,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260120-000092,2026-01-20,2026-01-27,926,TH,REMITTANCE,JPY,805512.8,NewYork,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251205-000093,2025-12-05,2025-12-19,368,DE,IMPORT,SGD,1878951.36,NewYork,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250811-000094,2025-08-11,2025-08-27,476,HK,REMITTANCE,CNY,3152896.93,NewYork,TT,High-priority client. Premium handling.
+TX-20260307-000095,2026-03-07,2026-03-31,632,JP,REMITTANCE,AUD,2778154.8,NewYork,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250904-000096,2025-09-04,2025-09-09,813,IN,EXPORT,HKD,3868010.69,London,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250523-000097,2025-05-23,2025-05-27,92,SG,REMITTANCE,GBP,3975730.62,Singapore,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250519-000098,2025-05-19,2025-06-03,983,SG,EXPORT,USD,930900.46,Tokyo,LC,Customer disputed amount; resolved after reconciliation.
+TX-20251105-000099,2025-11-05,2025-11-13,747,HK,EXPORT,HKD,2533174.61,NewYork,DOC_COLL,High-priority client. Premium handling.
+TX-20250626-000100,2025-06-26,2025-07-11,611,TH,EXPORT,HKD,1392283.65,NewYork,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250914-000101,2025-09-14,2025-10-04,384,IN,IMPORT,CNY,4957271.67,Singapore,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250601-000102,2025-06-01,2025-06-19,499,KR,REMITTANCE,SGD,2683402.6,Singapore,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260501-000103,2026-05-01,2026-05-31,692,FR,IMPORT,USD,1733774.21,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20251209-000104,2025-12-09,2026-01-06,62,IN,IMPORT,EUR,4390481.62,Tokyo,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250815-000105,2025-08-15,2025-09-10,889,JP,IMPORT,EUR,2947816.26,NewYork,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20260109-000106,2026-01-09,2026-01-11,355,IN,IMPORT,JPY,3837319.84,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250714-000107,2025-07-14,2025-07-22,219,CN,IMPORT,EUR,2311786.89,Singapore,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251122-000108,2025-11-22,2025-12-22,346,SG,EXPORT,JPY,3231740.76,Tokyo,LC,High-priority client. Premium handling.
+TX-20260427-000109,2026-04-27,2026-05-25,893,SG,EXPORT,SGD,3860443.42,London,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250521-000110,2025-05-21,2025-06-13,483,AU,REMITTANCE,SGD,3938284.42,Singapore,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260511-000111,2026-05-11,2026-05-28,30,HK,REMITTANCE,USD,1666543.09,Tokyo,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250530-000112,2025-05-30,2025-06-23,4,GB,EXPORT,HKD,1833264.01,London,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251206-000113,2025-12-06,2025-12-31,916,HK,EXPORT,EUR,3019202.88,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250816-000114,2025-08-16,2025-08-20,90,TH,EXPORT,USD,3947150.03,NewYork,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251031-000115,2025-10-31,2025-11-29,329,SG,IMPORT,JPY,4190355.16,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260222-000116,2026-02-22,2026-03-22,667,JP,EXPORT,HKD,961433.42,London,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260221-000117,2026-02-21,2026-03-23,728,KR,REMITTANCE,JPY,3285413.63,NewYork,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251118-000118,2025-11-18,2025-12-05,149,JP,IMPORT,SGD,3258124.29,London,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260116-000119,2026-01-16,2026-01-19,255,HK,EXPORT,USD,4126093.39,Tokyo,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20260518-000120,2026-05-18,2026-06-09,606,TH,IMPORT,HKD,2453227.65,London,LC,High-priority client. Premium handling.
+TX-20260119-000121,2026-01-19,2026-01-27,953,DE,REMITTANCE,CNY,1411130.93,NewYork,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20251225-000122,2025-12-25,2026-01-12,39,IN,IMPORT,HKD,4858200.87,NewYork,LC,High-priority client. Premium handling.
+TX-20250523-000123,2025-05-23,2025-06-16,40,GB,IMPORT,GBP,1367536.71,Singapore,LC,Standard transaction. No issues reported.
+TX-20260404-000124,2026-04-04,2026-04-11,17,SG,IMPORT,USD,381840.75,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251109-000125,2025-11-09,2025-12-05,384,GB,EXPORT,AUD,3001639.11,Singapore,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260207-000126,2026-02-07,2026-02-25,475,AU,IMPORT,HKD,878652.79,London,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250716-000127,2025-07-16,2025-07-19,654,SG,REMITTANCE,GBP,232243.55,London,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20250709-000128,2025-07-09,2025-07-25,114,HK,REMITTANCE,AUD,3727832.14,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250914-000129,2025-09-14,2025-10-11,123,GB,IMPORT,EUR,864550.43,Singapore,LC,High-priority client. Premium handling.
+TX-20260103-000130,2026-01-03,2026-01-07,803,SG,IMPORT,JPY,3388022.83,Singapore,DOC_COLL,High-priority client. Premium handling.
+TX-20250928-000131,2025-09-28,2025-10-19,278,IN,REMITTANCE,SGD,2599913.27,NewYork,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250816-000132,2025-08-16,2025-08-29,957,FR,IMPORT,USD,4395345.31,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20260220-000133,2026-02-20,2026-03-13,242,CN,IMPORT,AUD,3804687.41,London,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251102-000134,2025-11-02,2025-11-09,688,AU,REMITTANCE,JPY,369994.39,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251115-000135,2025-11-15,2025-11-21,973,GB,REMITTANCE,CNY,1751491.09,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251109-000136,2025-11-09,2025-12-02,249,SG,REMITTANCE,SGD,1397469.39,Tokyo,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250526-000137,2025-05-26,2025-06-15,129,FR,EXPORT,SGD,2302166.0,NewYork,LC,High-priority client. Premium handling.
+TX-20251214-000138,2025-12-14,2026-01-09,30,CN,EXPORT,SGD,97840.61,London,LC,Customer disputed amount; resolved after reconciliation.
+TX-20260314-000139,2026-03-14,2026-04-04,550,HK,REMITTANCE,USD,703776.38,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260208-000140,2026-02-08,2026-02-14,848,JP,REMITTANCE,USD,2414427.67,Singapore,TT,High-priority client. Premium handling.
+TX-20251026-000141,2025-10-26,2025-11-21,599,CN,REMITTANCE,CNY,4972730.84,Tokyo,TT,High-priority client. Premium handling.
+TX-20250722-000142,2025-07-22,2025-08-12,378,SG,EXPORT,HKD,523009.6,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20260225-000143,2026-02-25,2026-03-22,250,IN,EXPORT,GBP,3988395.08,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260127-000144,2026-01-27,2026-02-10,839,TH,EXPORT,SGD,4572403.74,Tokyo,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250721-000145,2025-07-21,2025-07-25,86,DE,IMPORT,AUD,3449534.64,NewYork,LC,High-priority client. Premium handling.
+TX-20251012-000146,2025-10-12,2025-11-11,306,US,IMPORT,USD,4142930.88,Singapore,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250902-000147,2025-09-02,2025-09-06,71,DE,IMPORT,SGD,2371284.44,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250721-000148,2025-07-21,2025-08-11,334,IN,IMPORT,CNY,687791.32,NewYork,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250923-000149,2025-09-23,2025-10-10,259,AU,REMITTANCE,AUD,1759735.98,Tokyo,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250825-000150,2025-08-25,2025-09-17,547,JP,EXPORT,AUD,2662043.6,NewYork,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250720-000151,2025-07-20,2025-08-18,642,DE,EXPORT,JPY,945855.7,Tokyo,LC,High-priority client. Premium handling.
+TX-20250621-000152,2025-06-21,2025-07-05,176,GB,REMITTANCE,GBP,1572447.33,London,DOC_COLL,Standard transaction. No issues reported.
+TX-20250723-000153,2025-07-23,2025-08-18,587,TH,EXPORT,JPY,3775509.49,Singapore,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260311-000154,2026-03-11,2026-03-13,918,AU,REMITTANCE,HKD,982779.54,London,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250919-000155,2025-09-19,2025-09-30,471,AU,REMITTANCE,AUD,4623479.27,NewYork,LC,Standard transaction. No issues reported.
+TX-20250724-000156,2025-07-24,2025-08-11,46,CN,REMITTANCE,HKD,2509587.03,London,TT,Standard transaction. No issues reported.
+TX-20260425-000157,2026-04-25,2026-05-12,191,GB,EXPORT,AUD,1649473.89,NewYork,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250730-000158,2025-07-30,2025-08-16,583,KR,REMITTANCE,AUD,179197.81,Tokyo,TT,High-priority client. Premium handling.
+TX-20260301-000159,2026-03-01,2026-03-09,168,IN,EXPORT,HKD,595211.23,Tokyo,TT,High-priority client. Premium handling.
+TX-20250703-000160,2025-07-03,2025-07-09,60,CN,IMPORT,AUD,1153387.39,NewYork,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250625-000161,2025-06-25,2025-07-01,22,HK,EXPORT,HKD,2351239.33,NewYork,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250801-000162,2025-08-01,2025-08-30,876,HK,IMPORT,CNY,4514498.34,Tokyo,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260122-000163,2026-01-22,2026-02-13,832,GB,EXPORT,JPY,10175.1,NewYork,TT,High-priority client. Premium handling.
+TX-20260514-000164,2026-05-14,2026-05-26,534,DE,EXPORT,HKD,4351569.58,Tokyo,TT,High-priority client. Premium handling.
+TX-20250520-000165,2025-05-20,2025-05-27,632,GB,IMPORT,JPY,2732358.37,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250531-000166,2025-05-31,2025-06-11,909,HK,IMPORT,USD,1231439.68,Tokyo,TT,Standard transaction. No issues reported.
+TX-20250819-000167,2025-08-19,2025-08-23,630,DE,REMITTANCE,USD,1513090.61,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260228-000168,2026-02-28,2026-03-25,140,AU,REMITTANCE,USD,1635780.64,London,TT,Standard transaction. No issues reported.
+TX-20260129-000169,2026-01-29,2026-02-28,853,KR,EXPORT,EUR,1725383.01,London,TT,Standard transaction. No issues reported.
+TX-20250715-000170,2025-07-15,2025-07-17,166,KR,IMPORT,USD,4381608.9,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20250822-000171,2025-08-22,2025-08-30,910,KR,REMITTANCE,AUD,3520371.34,NewYork,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250713-000172,2025-07-13,2025-07-25,317,FR,IMPORT,JPY,4755574.81,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20260109-000173,2026-01-09,2026-02-08,246,HK,EXPORT,USD,4507448.85,Tokyo,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250730-000174,2025-07-30,2025-08-11,592,SG,IMPORT,GBP,3566451.66,NewYork,LC,Standard transaction. No issues reported.
+TX-20250723-000175,2025-07-23,2025-07-26,744,JP,EXPORT,JPY,4779983.58,Singapore,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260209-000176,2026-02-09,2026-02-28,230,DE,IMPORT,SGD,4491970.31,NewYork,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260421-000177,2026-04-21,2026-04-23,753,US,IMPORT,JPY,4586310.58,Singapore,LC,Counterparty requested expedited settlement due to year-end closing.
+TX-20250815-000178,2025-08-15,2025-09-04,991,US,REMITTANCE,GBP,1752521.15,Singapore,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251024-000179,2025-10-24,2025-11-01,459,HK,EXPORT,CNY,3866592.72,London,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250714-000180,2025-07-14,2025-08-04,533,SG,REMITTANCE,CNY,3495312.92,NewYork,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250726-000181,2025-07-26,2025-08-20,948,CN,EXPORT,SGD,2203401.98,London,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251116-000182,2025-11-16,2025-11-24,267,GB,EXPORT,USD,1494569.13,London,TT,High-priority client. Premium handling.
+TX-20260208-000183,2026-02-08,2026-03-06,460,US,EXPORT,EUR,1960014.59,Singapore,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260120-000184,2026-01-20,2026-01-23,29,CN,EXPORT,GBP,182074.9,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250824-000185,2025-08-24,2025-09-02,608,HK,IMPORT,SGD,3515679.22,London,DOC_COLL,Customer disputed amount; resolved after reconciliation.
+TX-20260318-000186,2026-03-18,2026-03-23,124,FR,IMPORT,GBP,2775943.97,Tokyo,LC,High-priority client. Premium handling.
+TX-20250819-000187,2025-08-19,2025-09-17,957,CN,IMPORT,HKD,759430.95,NewYork,LC,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20251126-000188,2025-11-26,2025-12-06,118,US,IMPORT,HKD,3183229.26,Singapore,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20251204-000189,2025-12-04,2025-12-15,394,HK,REMITTANCE,USD,2869493.04,Tokyo,TT,High-priority client. Premium handling.
+TX-20260518-000190,2026-05-18,2026-06-04,867,CN,IMPORT,HKD,702218.15,Singapore,TT,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20260415-000191,2026-04-15,2026-04-29,190,FR,EXPORT,AUD,1610432.42,Singapore,LC,High-priority client. Premium handling.
+TX-20250913-000192,2025-09-13,2025-09-23,121,US,REMITTANCE,EUR,2470556.22,London,LC,Customer disputed amount; resolved after reconciliation.
+TX-20250816-000193,2025-08-16,2025-08-30,121,JP,REMITTANCE,SGD,215181.18,Tokyo,DOC_COLL,Standard transaction. No issues reported.
+TX-20260422-000194,2026-04-22,2026-05-07,386,HK,REMITTANCE,HKD,3294275.23,Tokyo,DOC_COLL,Counterparty requested expedited settlement due to year-end closing.
+TX-20251005-000195,2025-10-05,2025-11-01,128,DE,EXPORT,GBP,4183000.49,Tokyo,TT,Standard transaction. No issues reported.
+TX-20260105-000196,2026-01-05,2026-01-08,77,JP,EXPORT,EUR,170143.95,Tokyo,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20250529-000197,2025-05-29,2025-06-28,232,TH,EXPORT,SGD,4362394.45,Tokyo,DOC_COLL,Suspicious pattern detected. Manual review escalated to compliance.
+TX-20250520-000198,2025-05-20,2025-05-22,63,AU,REMITTANCE,EUR,1798338.33,Tokyo,TT,Customer disputed amount; resolved after reconciliation.
+TX-20250722-000199,2025-07-22,2025-08-14,560,GB,EXPORT,USD,567356.34,Singapore,TT,Counterparty requested expedited settlement due to year-end closing.
+TX-20260409-000200,2026-04-09,2026-05-09,795,FR,EXPORT,GBP,4922819.94,London,TT,Standard transaction. No issues reported.
