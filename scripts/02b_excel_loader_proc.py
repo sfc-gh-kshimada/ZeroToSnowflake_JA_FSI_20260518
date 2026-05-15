@@ -42,7 +42,9 @@ def main(session, stage_path: str, target_table: str) -> str:
         実行結果メッセージ
     """
     # 1. Stage 上のファイルをストリームとして読み取り
-    file_stream = session.file.get_stream(f"@{stage_path}", decompress=False)
+    # stage_path に @ が含まれていない場合は付加する
+    normalized_path = stage_path if stage_path.startswith('@') else f"@{stage_path}"
+    file_stream = session.file.get_stream(normalized_path, decompress=False)
 
     # 2. openpyxl で Excel を読み込み
     wb = openpyxl.load_workbook(file_stream, data_only=True)

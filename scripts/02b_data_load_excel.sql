@@ -80,15 +80,16 @@ LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 --*/
 
 CREATE OR REPLACE PROCEDURE fsi_zts_101.raw_excel.load_excel_to_table(
-    STAGE_PATH VARCHAR,    -- 例: 'fsi_zts_101.raw_excel.excel_demo_stage/corporate_sales_data.xlsx'
-    TARGET_TABLE VARCHAR   -- 例: 'fsi_zts_101.raw_excel.corporate_sales'
+    INPUT_STAGE VARCHAR,     -- 例: 'fsi_zts_101.raw_excel.excel_demo_stage'
+    ARCHIVE_STAGE VARCHAR,   -- 例: 'fsi_zts_101.raw_excel.excel_archive_stage'
+    TARGET_TABLE VARCHAR     -- 例: 'fsi_zts_101.raw_excel.corporate_sales'
 )
 RETURNS VARCHAR
 LANGUAGE PYTHON
 RUNTIME_VERSION = '3.11'
 PACKAGES = ('snowflake-snowpark-python', 'openpyxl', 'pandas')
 HANDLER = 'main'
-COMMENT = 'Excel ファイルをステージから読み込み、指定テーブルに append するプロシージャ'
+EXECUTE AS CALLER
 AS
 $$
 import pandas as pd
@@ -96,80 +97,120 @@ from openpyxl import load_workbook
 from io import BytesIO
 from datetime import datetime, date
 
-def main(session, stage_path: str, target_table: str) -> str:
+def main(session, input_stage: str, archive_stage: str, target_table: str) -> str:
     """
-    Excel ファイルをステージから取得し、対象テーブルに挿入する。
+    入力ステージ内の全 .xlsx ファイルを自動検出して取り込み、
+    処理済みファイルをアーカイブステージに移動する。
+
+    フロー:
+      1. LIST @input_stage で .xlsx ファイルを検出
+      2. 各ファイルを get_stream → openpyxl → pandas → テーブル書き込み
+      3. 処理済みファイルを COPY FILES でアーカイブステージに移動
+      4. 入力ステージから処理済みファイルを REMOVE
 
     Parameters
     ----------
-    session : snowflake.snowpark.Session
-        Snowpark セッション (自動注入)
-    stage_path : str
-        ステージ上の Excel ファイルパス (例: 'db.schema.stage/file.xlsx')
+    input_stage : str
+        入力ステージの完全修飾名 (例: 'fsi_zts_101.raw_excel.excel_demo_stage')
+    archive_stage : str
+        アーカイブステージの完全修飾名 (例: 'fsi_zts_101.raw_excel.excel_archive_stage')
     target_table : str
-        書き込み先テーブルの完全修飾名 (例: 'db.schema.table')
+        書き込み先テーブルの完全修飾名 (例: 'fsi_zts_101.raw_excel.corporate_sales')
     """
+    # @ の正規化
+    input_ref  = input_stage  if input_stage.startswith('@')  else f"@{input_stage}"
+    archive_ref = archive_stage if archive_stage.startswith('@') else f"@{archive_stage}"
 
     # ----------------------------------------------------------------
-    # Step 1: ステージから Excel ファイルをストリームとして読み込み
+    # Step 1: 入力ステージ内の .xlsx ファイルを検出
     # ----------------------------------------------------------------
-    input_stream = session.file.get_stream(f"@{stage_path}", decompress=False)
-    workbook = load_workbook(filename=BytesIO(input_stream.read()), read_only=True, data_only=True)
-    sheet = workbook.active
+    files_result = session.sql(f"LIST {input_ref}").collect()
+    xlsx_files = [
+        row['name'] for row in files_result
+        if row['name'].lower().endswith('.xlsx')
+    ]
+
+    if not xlsx_files:
+        return "No .xlsx files found in input stage."
+
+    total_rows = 0
+    processed_files = []
+    errors = []
+
+    for file_path in xlsx_files:
+        try:
+            # ----------------------------------------------------------------
+            # Step 2: Excel ファイルを読み込み → テーブルに書き込み
+            # ----------------------------------------------------------------
+            # LIST の結果は "stage_name/path/filename.xlsx" 形式 (@ なし)
+            stream_path = f"@{file_path}"
+            input_stream = session.file.get_stream(stream_path, decompress=False)
+            workbook = load_workbook(filename=BytesIO(input_stream.read()), read_only=True, data_only=True)
+            sheet = workbook.active
+            data = list(sheet.values)
+
+            if not data or len(data) < 2:
+                workbook.close()
+                errors.append(f"{file_path}: empty or header-only")
+                continue
+
+            headers = [str(h).strip() for h in data[0]]
+            df = pd.DataFrame(data[1:], columns=headers)
+
+            # 日付列の変換
+            date_columns = ['last_visit_date', 'expected_close_date']
+            for col in date_columns:
+                if col in df.columns:
+                    df[col] = pd.to_datetime(df[col], errors='coerce').dt.date
+
+            # 数値列の変換
+            if 'opportunity_amount' in df.columns:
+                df['opportunity_amount'] = pd.to_numeric(df['opportunity_amount'], errors='coerce')
+
+            # メタデータ列
+            df['loaded_at'] = datetime.now()
+            file_name = file_path.split('/')[-1]
+            df['source_file'] = file_name
+
+            # カラム名大文字化
+            df.columns = [c.upper() for c in df.columns]
+
+            # テーブルに書き込み
+            snowpark_df = session.create_dataframe(df)
+            snowpark_df.write.mode("append").save_as_table(target_table)
+
+            total_rows += len(df)
+            processed_files.append(file_name)
+            workbook.close()
+
+        except Exception as e:
+            errors.append(f"{file_path}: {str(e)}")
+            continue
 
     # ----------------------------------------------------------------
-    # Step 2: openpyxl → pandas DataFrame に変換
+    # Step 3: 処理済みファイルをアーカイブステージに移動
     # ----------------------------------------------------------------
-    data = list(sheet.values)
-    if not data:
-        return "Error: Excel file is empty."
+    if processed_files:
+        # COPY FILES で入力ステージ → アーカイブステージに転送
+        session.sql(f"COPY FILES INTO {archive_ref} FROM {input_ref}").collect()
 
-    # 1 行目をヘッダー、2 行目以降をデータとして DataFrame 作成
-    headers = [str(h).strip() for h in data[0]]
-    df = pd.DataFrame(data[1:], columns=headers)
-
-    if df.empty:
-        return "Error: Excel file has headers but no data rows."
+        # Step 4: 入力ステージから処理済みファイルを削除
+        for file_name in processed_files:
+            session.sql(f"REMOVE {input_ref}/{file_name}").collect()
 
     # ----------------------------------------------------------------
-    # Step 3: 日付列の型変換
-    #   Excel のセルが datetime 型で読み込まれた場合 → date に変換
-    #   文字列の場合 → pd.to_datetime でパース後 date に変換
+    # 結果サマリ
     # ----------------------------------------------------------------
-    date_columns = ['last_visit_date', 'expected_close_date']
-    for col in date_columns:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors='coerce').dt.date
+    result_parts = [
+        f"Processed: {len(processed_files)} file(s), {total_rows} rows loaded into '{target_table}'."
+    ]
+    if processed_files:
+        result_parts.append(f"Archived to: {archive_stage}")
+        result_parts.append(f"Files: {', '.join(processed_files)}")
+    if errors:
+        result_parts.append(f"Errors ({len(errors)}): {'; '.join(errors)}")
 
-    # ----------------------------------------------------------------
-    # Step 4: 数値列の型変換 (opportunity_amount)
-    # ----------------------------------------------------------------
-    if 'opportunity_amount' in df.columns:
-        df['opportunity_amount'] = pd.to_numeric(df['opportunity_amount'], errors='coerce')
-
-    # ----------------------------------------------------------------
-    # Step 5: メタデータ列の追加
-    # ----------------------------------------------------------------
-    df['loaded_at'] = datetime.now()
-    # ステージパスからファイル名を抽出
-    file_name = stage_path.split('/')[-1] if '/' in stage_path else stage_path
-    df['source_file'] = file_name
-
-    # ----------------------------------------------------------------
-    # Step 6: カラム名を大文字に変換 (Snowflake の規約に合わせる)
-    # ----------------------------------------------------------------
-    df.columns = [c.upper() for c in df.columns]
-
-    # ----------------------------------------------------------------
-    # Step 7: Snowpark DataFrame に変換してテーブルに書き込み
-    # ----------------------------------------------------------------
-    snowpark_df = session.create_dataframe(df)
-    snowpark_df.write.mode("append").save_as_table(target_table)
-
-    row_count = len(df)
-    workbook.close()
-
-    return f"Success: {row_count} rows loaded from '{file_name}' into '{target_table}'."
+    return ' | '.join(result_parts)
 $$;
 
 
@@ -178,13 +219,15 @@ $$;
     アップロード済みの Excel ファイルを指定してプロシージャを呼び出します。
 --*/
 
--- テーブルが空であることを確認 (初回実行前)
+-- テーブルが5,000件であることを確認 (初回実行前)
 SELECT COUNT(*) AS before_count FROM fsi_zts_101.raw_excel.corporate_sales;
 
 -- プロシージャを実行して Excel データを取り込み
+-- (ステージ内の全 .xlsx を自動検出 → テーブル取り込み → アーカイブに移動)
 CALL fsi_zts_101.raw_excel.load_excel_to_table(
-    'fsi_zts_101.raw_excel.excel_demo_stage/corporate_sales_data.xlsx',
-    'fsi_zts_101.raw_excel.corporate_sales'
+    'fsi_zts_101.raw_excel.excel_demo_stage',      -- 入力ステージ
+    'fsi_zts_101.raw_excel.excel_archive_stage',   -- アーカイブステージ
+    'fsi_zts_101.raw_excel.corporate_sales'        -- ターゲットテーブル
 );
 
 -- 取り込み後の件数確認
@@ -269,7 +312,8 @@ CREATE OR REPLACE TASK fsi_zts_101.raw_excel.load_excel_daily_task
     COMMENT   = '毎朝 9:00 (JST) に Excel データを取り込む日次タスク'
 AS
     CALL fsi_zts_101.raw_excel.load_excel_to_table(
-        'fsi_zts_101.raw_excel.excel_demo_stage/corporate_sales_data.xlsx',
+        'fsi_zts_101.raw_excel.excel_demo_stage',
+        'fsi_zts_101.raw_excel.excel_archive_stage',
         'fsi_zts_101.raw_excel.corporate_sales'
     );
 

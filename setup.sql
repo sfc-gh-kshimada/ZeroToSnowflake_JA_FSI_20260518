@@ -265,6 +265,10 @@ FILE_FORMAT = fsi_zts_101.public.xml_ff;
 CREATE OR REPLACE STAGE fsi_zts_101.raw_excel.excel_demo_stage
 COMMENT = 'Excel ファイル取り込み用の内部ステージ (assets/excel/corporate_sales_data.xlsx をアップロード)';
 
+-- Excel 処理済みファイルのアーカイブステージ
+CREATE OR REPLACE STAGE fsi_zts_101.raw_excel.excel_archive_stage
+COMMENT = '処理済み Excel ファイルの退避先。取り込み完了後に COPY FILES で移動される';
+
 /*--
  4. RAW ゾーン テーブル定義
 --*/
@@ -903,7 +907,6 @@ LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
 USE ROLE sysadmin;
 ALTER WAREHOUSE fsi_de_wh SET WAREHOUSE_SIZE = 'XSmall';
-ALTER WAREHOUSE fsi_de_wh        SUSPEND;
 
 -- セットアップ完了
 SELECT '✓ FSI Zero To Snowflake セットアップが完了しました。' AS status,

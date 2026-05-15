@@ -82,7 +82,6 @@ SELECT
     COUNT(DISTINCT source_file) AS file_count
 FROM fsi_zts_101.raw_trade.trade_transactions_csv_raw;
 
-
 /*----------------------------------------------------------------------------------
  3. JSON からの COPY INTO (VARIANT)
     -------------------------------------------------
@@ -113,10 +112,10 @@ SELECT COUNT(*) AS row_count FROM fsi_zts_101.raw_customer.customers_json_raw;
 -- :: でキャスト (例: ::STRING, ::NUMBER, ::DATE)
 SELECT
     raw_payload:customer_id::NUMBER      AS customer_id,
-    raw_payload:name::STRING             AS customer_name,
-    raw_payload:email::STRING            AS contact_email,
+    raw_payload:customer_name::STRING    AS customer_name,  -- name → customer_name
+    raw_payload:contact_email::STRING    AS contact_email,  -- email → contact_email
     raw_payload:country_code::STRING     AS country_code,
-    raw_payload:segment::STRING          AS customer_segment,
+    raw_payload:customer_segment::STRING AS customer_segment, -- segment → customer_segment
     raw_payload:risk_rating::STRING      AS risk_rating,
     source_file,
     loaded_at
@@ -213,23 +212,20 @@ LIMIT 1;
 -- pacs.008: グループヘッダ情報の展開
 SELECT
     message_id,
-    -- MsgId: GrpHdr 配下の MsgId テキストノード
     XMLGET(
-        XMLGET(payload, 'GrpHdr'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'GrpHdr'),
         'MsgId'
-    ):"$"::STRING                               AS msg_id,
+    ):"$"::STRING       AS msg_id,
 
-    -- CreDtTm: 作成日時
     XMLGET(
-        XMLGET(payload, 'GrpHdr'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'GrpHdr'),
         'CreDtTm'
-    ):"$"::TIMESTAMP                            AS created_at,
+    ):"$"::TIMESTAMP    AS created_at,
 
-    -- NbOfTxs: 取引件数
     XMLGET(
-        XMLGET(payload, 'GrpHdr'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'GrpHdr'),
         'NbOfTxs'
-    ):"$"::NUMBER                               AS num_transactions
+    ):"$"::NUMBER       AS num_transactions
 
 FROM fsi_zts_101.raw_trade.swift_messages_xml
 WHERE message_type = 'pacs.008';
@@ -238,63 +234,41 @@ WHERE message_type = 'pacs.008';
 -- pacs.008: 送金取引明細の展開
 SELECT
     message_id,
-
-    -- EndToEndId: 送金の End-to-End 識別子
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'PmtId'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'PmtId'),
         'EndToEndId'
-    ):"$"::STRING                               AS end_to_end_id,
+    ):"$"::STRING                  AS end_to_end_id,
 
-    -- IntrBkSttlmAmt: 銀行間決済金額 (テキストノード)
-    XMLGET(
-        XMLGET(payload, 'CdtTrfTxInf'),
-        'IntrBkSttlmAmt'
-    ):"$"::NUMBER(18,2)                         AS settlement_amount,
+    -- 修正: XMLGET で IntrBkSttlmAmt を取り出す
+XMLGET(
+    XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
+    'IntrBkSttlmAmt'
+):"$"::NUMBER(18,2)    AS settlement_amount,
 
-    -- Ccy: 通貨コード (IntrBkSttlmAmt の属性値 @Ccy)
-    XMLGET(
-        XMLGET(payload, 'CdtTrfTxInf'),
-        'IntrBkSttlmAmt'
-    ):"@Ccy"::STRING                            AS currency,
+XMLGET(
+    XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
+    'IntrBkSttlmAmt'
+):"@Ccy"::STRING       AS currency,
 
-    -- Dbtr/Nm: 債務者 (送金人) 名
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'Dbtr'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'Dbtr'),
         'Nm'
-    ):"$"::STRING                               AS debtor_name,
+    ):"$"::STRING                  AS debtor_name,
 
-    -- Cdtr/Nm: 債権者 (受取人) 名
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'Cdtr'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'Cdtr'),
         'Nm'
-    ):"$"::STRING                               AS creditor_name,
+    ):"$"::STRING                  AS creditor_name,
 
-    -- RmtInf/Ustrd: 送金目的 (非構造化)
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'RmtInf'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'RmtInf'),
         'Ustrd'
-    ):"$"::STRING                               AS remittance_info,
+    ):"$"::STRING                  AS remittance_info,
 
-    -- InstgAgt BIC: 送金指図金融機関
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'InstgAgt'
-        ),
-        'FinInstnId'
-    ):"BICFI":"$"::STRING                       AS instructing_agent_bic
+        XMLGET(XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'InstgAgt'), 'FinInstnId'),
+        'BICFI'
+    ):"$"::STRING                  AS instructing_agent_bic
 
 FROM fsi_zts_101.raw_trade.swift_messages_xml
 WHERE message_type = 'pacs.008';
@@ -307,7 +281,7 @@ WHERE message_type = 'pacs.008';
 
 SELECT
     XMLGET(
-        XMLGET(payload, 'CdtTrfTxInf'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
         'IntrBkSttlmAmt'
     ):"@Ccy"::STRING                            AS currency,
 
@@ -315,14 +289,14 @@ SELECT
 
     SUM(
         XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
+            XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
             'IntrBkSttlmAmt'
         ):"$"::NUMBER(18,2)
     )                                            AS total_amount,
 
     AVG(
         XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
+            XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
             'IntrBkSttlmAmt'
         ):"$"::NUMBER(18,2)
     )                                            AS avg_amount
@@ -344,33 +318,27 @@ ORDER BY total_amount DESC;
 SELECT
     message_id,
     XMLGET(
-        XMLGET(payload, 'GrpHdr'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'GrpHdr'),
         'MsgId'
     ):"$"::STRING                               AS msg_id,
 
     XMLGET(
-        XMLGET(payload, 'CdtTrfTxInf'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
         'IntrBkSttlmAmt'
     ):"@Ccy"::STRING                            AS currency,
 
     XMLGET(
-        XMLGET(payload, 'CdtTrfTxInf'),
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
         'IntrBkSttlmAmt'
     ):"$"::NUMBER(18,2)                         AS settlement_amount,
 
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'Dbtr'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'Dbtr'),
         'Nm'
     ):"$"::STRING                               AS debtor_name,
 
     XMLGET(
-        XMLGET(
-            XMLGET(payload, 'CdtTrfTxInf'),
-            'Cdtr'
-        ),
+        XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'Cdtr'),
         'Nm'
     ):"$"::STRING                               AS creditor_name,
 
@@ -379,7 +347,7 @@ SELECT
 FROM fsi_zts_101.raw_trade.swift_messages_xml
 WHERE message_type = 'pacs.008'
   AND XMLGET(
-          XMLGET(payload, 'CdtTrfTxInf'),
+          XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
           'IntrBkSttlmAmt'
       ):"$"::NUMBER(18,2) >= 1000000000
 ORDER BY settlement_amount DESC;
@@ -412,78 +380,71 @@ ORDER BY settlement_amount DESC;
 ----------------------------------------------------------------------------------*/
 
 -- camt.053: 口座情報 + 明細行を LATERAL FLATTEN で展開
+WITH stmt AS (
+    SELECT
+        message_id,
+        XMLGET(XMLGET(payload, 'BkToCstmrStmt'), 'Stmt') AS stmt_elem
+    FROM fsi_zts_101.raw_trade.swift_messages_xml
+    WHERE message_type = 'camt.053'
+)
 SELECT
-    m.message_id,
+    s.message_id,
 
-    -- 口座 IBAN
+    XMLGET(XMLGET(XMLGET(s.stmt_elem, 'Acct'), 'Id'), 'IBAN'):"$"::STRING   AS account_iban,
+
+    XMLGET(XMLGET(s.stmt_elem, 'Acct'), 'Ccy'):"$"::STRING                  AS account_currency,
+
+    XMLGET(XMLGET(s.stmt_elem, 'Ntry', e.index), 'Amt'):"$"::NUMBER(18,2)   AS entry_amount,
+    XMLGET(XMLGET(s.stmt_elem, 'Ntry', e.index), 'Amt'):"@Ccy"::STRING      AS entry_currency,
+    XMLGET(XMLGET(s.stmt_elem, 'Ntry', e.index), 'CdtDbtInd'):"$"::STRING   AS debit_credit_indicator,
+
+    XMLGET(
+        XMLGET(XMLGET(s.stmt_elem, 'Ntry', e.index), 'BookgDt'),
+        'Dt'
+    ):"$"::DATE                                                              AS booking_date,
+
     XMLGET(
         XMLGET(
             XMLGET(
-                XMLGET(m.payload, 'Stmt'),
-                'Acct'
+                XMLGET(XMLGET(s.stmt_elem, 'Ntry', e.index), 'NtryDtls'),
+                'TxDtls'
             ),
-            'Id'
+            'RmtInf'
         ),
-        'IBAN'
-    ):"$"::STRING                                   AS account_iban,
+        'Ustrd'
+    ):"$"::STRING                                                            AS remittance_info
 
-    -- 口座通貨
-    XMLGET(
-        XMLGET(m.payload, 'Stmt'),
-        'Acct'
-    ):"Ccy":"$"::STRING                             AS account_currency,
-
-    -- 明細: 金額
-    XMLGET(entry.value, 'Amt'):"$"::NUMBER(18,2)    AS entry_amount,
-
-    -- 明細: 通貨 (Amt の属性)
-    XMLGET(entry.value, 'Amt'):"@Ccy"::STRING       AS entry_currency,
-
-    -- 明細: 借方/貸方区分 (DBIT=出金, CRDT=入金)
-    XMLGET(entry.value, 'CdtDbtInd'):"$"::STRING    AS debit_credit_indicator,
-
-    -- 明細: 記帳日
-    XMLGET(
-        XMLGET(entry.value, 'BookgDt'),
-        'Dt'
-    ):"$"::DATE                                     AS booking_date,
-
-    -- 明細: 送金目的
-    XMLGET(
-        XMLGET(
-            XMLGET(entry.value, 'NtryDtls'),
-            'TxDtls'
-        ),
-        'RmtInf'
-    ):"Ustrd":"$"::STRING                           AS remittance_info
-
-FROM fsi_zts_101.raw_trade.swift_messages_xml m,
-     LATERAL FLATTEN(input => m.payload:"Stmt":"Ntry") entry
-WHERE m.message_type = 'camt.053'
-ORDER BY m.message_id, booking_date;
+FROM stmt s,
+     LATERAL FLATTEN(input => s.stmt_elem:"Ntry") e
+ORDER BY s.message_id, booking_date;
 
 
 -- camt.053: 口座ごとの入出金集計
+WITH stmt AS (
+    SELECT
+        message_id,
+        XMLGET(XMLGET(payload, 'BkToCstmrStmt'), 'Stmt') AS stmt_elem
+    FROM fsi_zts_101.raw_trade.swift_messages_xml
+    WHERE message_type = 'camt.053'
+)
 SELECT
+    XMLGET(XMLGET(XMLGET(s.stmt_elem, 'Acct'), 'Id'), 'IBAN'):"$"::STRING  AS account_iban,
+
     XMLGET(
+        XMLGET(s.stmt_elem, 'Ntry', e.index),
+        'CdtDbtInd'
+    ):"$"::STRING                                                            AS debit_credit,
+
+    COUNT(*)                                                                 AS entry_count,
+    SUM(
         XMLGET(
-            XMLGET(
-                XMLGET(m.payload, 'Stmt'),
-                'Acct'
-            ),
-            'Id'
-        ),
-        'IBAN'
-    ):"$"::STRING                                   AS account_iban,
+            XMLGET(s.stmt_elem, 'Ntry', e.index),
+            'Amt'
+        ):"$"::NUMBER(18,2)
+    )                                                                        AS total_amount
 
-    XMLGET(entry.value, 'CdtDbtInd'):"$"::STRING    AS debit_credit,
-
-    COUNT(*)                                         AS entry_count,
-    SUM(XMLGET(entry.value, 'Amt'):"$"::NUMBER(18,2)) AS total_amount
-
-FROM fsi_zts_101.raw_trade.swift_messages_xml m,
-     LATERAL FLATTEN(input => m.payload:"Stmt":"Ntry") entry
-WHERE m.message_type = 'camt.053'
+FROM stmt s,
+     LATERAL FLATTEN(input => s.stmt_elem:"Ntry") e
 GROUP BY account_iban, debit_credit
 ORDER BY account_iban, debit_credit;
 
