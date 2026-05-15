@@ -124,14 +124,36 @@ def main(session, input_stage: str, archive_stage: str, target_table: str) -> st
     # ----------------------------------------------------------------
     # Step 1: 入力ステージ内の .xlsx ファイルを検出
     # ----------------------------------------------------------------
-    files_result = session.sql(f"LIST {input_ref}").collect()
+    try:
+        files_result = session.sql(f"LIST {input_ref}").collect()
+    except Exception as e:
+        # ステージが存在しない or 権限不足の場合、スタックトレースを出さずにメッセージ返却
+        return (
+            f"Error: Cannot access input stage '{input_stage}'. "
+            f"Stage may not exist or current role lacks READ privilege. "
+            f"Run setup.sql first, or check: SHOW STAGES IN SCHEMA fsi_zts_101.raw_excel; "
+            f"Detail: {str(e)[:200]}"
+        )
+
     xlsx_files = [
         row['name'] for row in files_result
         if row['name'].lower().endswith('.xlsx')
     ]
 
+    # ----------------------------------------------------------------
+    # Step 1b: 入力ステージが空の場合 → 正常終了 (処理対象なし)
+    #   実運用: アーカイブ済みファイルは処理完了の証跡。
+    #          入力ステージに新しいファイルが配置されるまで待機。
+    #   ハンズオン: 再実行したい場合は以下を先に実行してください:
+    #     COPY FILES INTO @fsi_zts_101.raw_excel.excel_demo_stage
+    #       FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/excel/;
+    # ----------------------------------------------------------------
     if not xlsx_files:
-        return "No .xlsx files found in input stage."
+        return (
+            "No .xlsx files found in input stage. Nothing to process. "
+            "If files were already archived, this is expected behavior (idempotent). "
+            "To re-run: execute COPY FILES from Git repo to input stage first."
+        )
 
     total_rows = 0
     processed_files = []

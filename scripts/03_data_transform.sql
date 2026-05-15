@@ -269,9 +269,9 @@ ALTER TASK harmonized.daily_trade_aggregate_task SUSPEND;
 ----------------------------------------------------------------------------------*/
 
 CREATE OR REPLACE DYNAMIC TABLE harmonized.trade_orders_dt
-    TARGET_LAG = '1 hour'
+    TARGET_LAG = DOWNSTREAM
     WAREHOUSE  = fsi_de_wh
-    COMMENT    = '貿易取引 + 顧客マスタの結合済み Dynamic Table (trade_orders_v の DT 版)'
+    COMMENT    = '貿易取引 + 顧客マスタの結合済み Dynamic Table (中間ノード: 下流のラグに従いリフレッシュ)'
 AS
 SELECT
     t.transaction_id,
@@ -309,13 +309,18 @@ SELECT COUNT(*) AS row_count FROM harmonized.trade_orders_dt;
     さらにこの Dynamic Table は trade_orders_dt を参照しているため、
     Snowflake が自動的に依存関係 (DAG) を構築します:
 
-      raw_trade.trade_transactions
+      raw_trade.trade_transactions (ソーステーブル)
               ↓
-      harmonized.trade_orders_dt        (TARGET_LAG = 1 hour)
-              ↓
-      analytics.daily_trade_summary_dt  (TARGET_LAG = 1 hour)
+      harmonized.trade_orders_dt        (TARGET_LAG = DOWNSTREAM)
+              ↓                          → 自身ではリフレッシュスケジュールを持たず、
+              ↓                            下流が必要とするタイミングでのみリフレッシュ
+      analytics.daily_trade_summary_dt  (TARGET_LAG = '1 hour')
+                                         → ビジネス要件「1時間以内の鮮度」を表現
 
-    上流が更新されると、下流も自動的に更新されます。
+    この設計により:
+      - 末端 DT にのみ SLA (データ鮮度) を定義
+      - 中間 DT は不要なリフレッシュを回避しコスト削減
+      - DAG 全体が末端の TARGET_LAG に従って自動調整
 ----------------------------------------------------------------------------------*/
 
 CREATE OR REPLACE DYNAMIC TABLE analytics.daily_trade_summary_dt

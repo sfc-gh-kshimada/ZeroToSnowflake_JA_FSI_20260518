@@ -75,12 +75,12 @@ USE ROLE fsi_admin;
 
 -- PII タグ: 個人情報の種類を分類
 CREATE OR REPLACE TAG fsi_zts_101.governance.pii_tag
-    ALLOWED_VALUES = 'NAME', 'EMAIL', 'PHONE'
+    ALLOWED_VALUES 'NAME', 'EMAIL', 'PHONE'
     COMMENT = '個人情報 (PII) を分類するタグ。NAME / EMAIL / PHONE の 3 種類';
 
 -- 財務金額タグ: 取引額・見込み額など金額カラムを分類
 CREATE OR REPLACE TAG fsi_zts_101.governance.financial_amount_tag
-    ALLOWED_VALUES = 'TRADE_AMOUNT', 'DEAL_AMOUNT'
+    ALLOWED_VALUES 'TRADE_AMOUNT', 'DEAL_AMOUNT'
     COMMENT = '財務金額カラムを分類するタグ。TRADE_AMOUNT / DEAL_AMOUNT の 2 種類';
 
 /*
@@ -280,8 +280,8 @@ USE ROLE fsi_admin;
 
 CREATE OR REPLACE ROW ACCESS POLICY fsi_zts_101.governance.branch_row_access
     AS (branch VARCHAR) RETURNS BOOLEAN ->
-    -- 管理者・DE は全拠点アクセス可
-    CURRENT_ROLE() IN ('FSI_ADMIN', 'FSI_DATA_ENGINEER')
+    -- 管理者・DE・開発者は全拠点アクセス可
+    CURRENT_ROLE() IN ('FSI_ADMIN', 'FSI_DATA_ENGINEER', 'FSI_DEVELOPER')
     OR
     -- アナリストは Tokyo 拠点のみ
     (CURRENT_ROLE() = 'FSI_ANALYST' AND branch = 'Tokyo')
@@ -496,7 +496,7 @@ ORDER BY start_time DESC;
       - セキュリティ監査時のエビデンス生成
 
     公式ドキュメント:
-      https://docs.snowflake.com/ja/sql-reference/sql/call-system-classify
+      https://docs.snowflake.com/ja/user-guide/classify-ui-trust-center
 ----------------------------------------------------------------------------------*/
 
 USE ROLE fsi_admin;
