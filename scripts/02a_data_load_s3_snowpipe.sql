@@ -70,9 +70,53 @@ FROM (
     SELECT
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
         METADATA$FILENAME
+    FROM @fsi_zts_101.raw_trade.s3_assets_stage/trade_csv/
+)
+FILE_FORMAT = fsi_zts_101.public.csv_ff
+ON_ERROR = 'CONTINUE';
+
+/*-- バックアップパターン A: 内部ステージ経由 (事前に COPY FILES で S3 → 内部ステージに転送済みの場合)
+COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
+    (transaction_id, trade_date, settlement_date, customer_id,
+     counterparty_country, transaction_type, currency_code, amount,
+     booking_branch, instrument_type, free_text_notes, source_file)
+FROM (
+    SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, METADATA$FILENAME
     FROM @fsi_zts_101.raw_trade.csv_stage
 )
 ON_ERROR = 'CONTINUE';
+--*/
+
+/*-- バックアップパターン B: Git Integration 経由 (Git リポジトリ → 内部ステージ → COPY INTO)
+-- 前提: setup.sql で以下を実行済み
+--   COPY FILES INTO @fsi_zts_101.raw_trade.csv_stage
+--     FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
+COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
+    (transaction_id, trade_date, settlement_date, customer_id,
+     counterparty_country, transaction_type, currency_code, amount,
+     booking_branch, instrument_type, free_text_notes, source_file)
+FROM (
+    SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, METADATA$FILENAME
+    FROM @fsi_zts_101.raw_trade.csv_stage
+)
+ON_ERROR = 'CONTINUE';
+--*/
+
+/*-- 代替パターン (バックアップ):
+
+    -- パターン A: 内部ステージ経由 (事前に COPY FILES で S3 → 内部ステージに転送済みの場合)
+    COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw (...)
+    FROM (SELECT ... FROM @fsi_zts_101.raw_trade.csv_stage)
+    ON_ERROR = 'CONTINUE';
+
+    -- パターン B: Git Repository 経由 (COPY FILES で Git → 内部ステージに転送後)
+    -- ※ Git Stage からの直接 COPY INTO は非対応。事前に COPY FILES が必要:
+    --   COPY FILES INTO @fsi_zts_101.raw_trade.csv_stage
+    --     FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
+    COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw (...)
+    FROM (SELECT ... FROM @fsi_zts_101.raw_trade.csv_stage)
+    ON_ERROR = 'CONTINUE';
+--*/
 
 -- 結果確認: 件数・日付範囲
 SELECT
@@ -101,9 +145,24 @@ FROM (
     SELECT
         $1,
         METADATA$FILENAME
-    FROM @fsi_zts_101.raw_trade.json_stage
+    FROM @fsi_zts_101.raw_trade.s3_assets_stage/customer_json/
 )
+FILE_FORMAT = fsi_zts_101.public.json_ff
 ON_ERROR = 'CONTINUE';
+
+/*-- バックアップパターン A: 内部ステージ経由
+COPY INTO fsi_zts_101.raw_customer.customers_json_raw (raw_payload, source_file)
+FROM (SELECT $1, METADATA$FILENAME FROM @fsi_zts_101.raw_trade.json_stage)
+ON_ERROR = 'CONTINUE';
+--*/
+
+/*-- バックアップパターン B: Git Integration 経由 (内部ステージに事前転送後)
+-- COPY FILES INTO @fsi_zts_101.raw_trade.json_stage
+--   FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/customer_json/;
+COPY INTO fsi_zts_101.raw_customer.customers_json_raw (raw_payload, source_file)
+FROM (SELECT $1, METADATA$FILENAME FROM @fsi_zts_101.raw_trade.json_stage)
+ON_ERROR = 'CONTINUE';
+--*/
 
 -- 結果確認
 SELECT COUNT(*) AS row_count FROM fsi_zts_101.raw_customer.customers_json_raw;
@@ -143,7 +202,7 @@ LIMIT 10;
       - VARIANT に格納された XML は XMLGET() / : / @ で要素・属性にアクセス
 ----------------------------------------------------------------------------------*/
 
--- 4.1 COPY INTO: XML ファイルをステージから VARIANT 列へ取り込み
+-- 4.1 COPY INTO: XML ファイルを S3 外部ステージから VARIANT 列へ取り込み
 COPY INTO fsi_zts_101.raw_trade.swift_messages_xml
     (message_id, received_at, message_type, payload, source_file)
 FROM (
@@ -158,10 +217,33 @@ FROM (
         END                                                    AS message_type,
         $1                                                     AS payload,
         METADATA$FILENAME                                      AS source_file
+    FROM @fsi_zts_101.raw_trade.s3_assets_stage/swift_xml/
+)
+FILE_FORMAT = (TYPE = 'XML')
+ON_ERROR = 'CONTINUE';
+
+/*-- バックアップパターン A: 内部ステージ経由
+COPY INTO fsi_zts_101.raw_trade.swift_messages_xml
+    (message_id, received_at, message_type, payload, source_file)
+FROM (
+    SELECT
+        METADATA$FILENAME || '-' || METADATA$FILE_ROW_NUMBER,
+        CURRENT_TIMESTAMP(),
+        CASE WHEN METADATA$FILENAME ILIKE '%pacs_008%' THEN 'pacs.008'
+             WHEN METADATA$FILENAME ILIKE '%camt_053%' THEN 'camt.053'
+             ELSE 'unknown' END,
+        $1, METADATA$FILENAME
     FROM @fsi_zts_101.raw_trade.xml_stage
 )
 FILE_FORMAT = (TYPE = 'XML')
 ON_ERROR = 'CONTINUE';
+--*/
+
+/*-- バックアップパターン B: Git Integration 経由 (内部ステージに事前転送後)
+-- COPY FILES INTO @fsi_zts_101.raw_trade.xml_stage
+--   FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/swift_xml/;
+-- (上記実行後に パターン A と同じ COPY INTO を実行)
+--*/
 
 -- 4.2 取り込み確認: 全件表示
 SELECT
@@ -457,18 +539,27 @@ ORDER BY account_iban, debit_credit;
 
     構成要素:
       1. 外部ステージ (S3 バケット + Storage Integration)
-      2. PIPE オブジェクト (COPY INTO 文を内包)
-      3. S3 Event Notification → SQS → Snowpipe
+      2. PIPE オブジェクト (COPY INTO 文を内包 + AUTO_INGEST = TRUE)
+      3. S3 Event Notification → SQS → Snowpipe (自動トリガー)
 
-    ★ 以下はハンズオン環境では実行せず、構文のみ確認してください。
-       実際に S3 イベント通知を設定するにはクラウド側の権限が必要です。
+    ★ 以下は構文のみ確認してください (実行しません)。
+      ハンズオン参加者ごとに個別の S3 イベント通知設定が必要なため、
+      今回は PIPE の定義構文と運用コマンドの紹介にとどめます。
+
+    金融ユースケース:
+      - S3 に到着する新規取引ファイルを数秒〜数分以内に自動取り込み
+      - 既存の Glue ETL → Snowpipe に置き換えて運用コスト削減
+      - ファイル到着からテーブル反映までのラグを最小化
+
+    公式ドキュメント:
+      https://docs.snowflake.com/ja/user-guide/data-load-snowpipe-intro
 ----------------------------------------------------------------------------------*/
 
--- 参考: Snowpipe の定義例 (実行しないでください)
+-- 参考: Snowpipe の定義例 (実行しません — 構文確認用)
 /*
 CREATE OR REPLACE PIPE fsi_zts_101.raw_trade.trade_csv_pipe
     AUTO_INGEST = TRUE
-    COMMENT = 'S3 から CSV ファイルを自動取り込みする Snowpipe'
+    COMMENT = 'S3 から CSV バッチファイルを自動取り込みする Snowpipe'
 AS
 COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
     (transaction_id, trade_date, settlement_date, customer_id,
@@ -478,18 +569,62 @@ FROM (
     SELECT
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
         METADATA$FILENAME
-    FROM @fsi_zts_101.raw_trade.csv_stage
-);
-
--- Snowpipe を有効化 (S3 イベント通知設定後に実行)
--- ALTER PIPE fsi_zts_101.raw_trade.trade_csv_pipe SET PIPE_EXECUTION_PAUSED = FALSE;
-
--- Snowpipe のステータス確認
--- SELECT SYSTEM$PIPE_STATUS('fsi_zts_101.raw_trade.trade_csv_pipe');
-
--- Snowpipe の通知チャネル ARN 確認 (S3 Event Notification に設定する値)
--- SHOW PIPES LIKE 'trade_csv_pipe' IN SCHEMA fsi_zts_101.raw_trade;
+    FROM @fsi_zts_101.raw_trade.s3_assets_stage/snowpipe_csv/
+)
+FILE_FORMAT = fsi_zts_101.public.csv_ff;
 */
+
+/*--
+    Snowpipe 運用コマンド (参考):
+
+    -- Snowpipe のステータス確認
+    SELECT SYSTEM$PIPE_STATUS('fsi_zts_101.raw_trade.trade_csv_pipe');
+
+    -- 手動 REFRESH (S3 イベント通知なしでファイルを検出・取り込み)
+    ALTER PIPE fsi_zts_101.raw_trade.trade_csv_pipe REFRESH;
+
+    -- Snowpipe の通知チャネル ARN 確認 (S3 Event Notification に設定する値)
+    SHOW PIPES LIKE 'trade_csv_pipe' IN SCHEMA fsi_zts_101.raw_trade;
+
+    -- 取り込み履歴の確認
+    SELECT * FROM TABLE(information_schema.copy_history(
+        TABLE_NAME => 'fsi_zts_101.raw_trade.trade_transactions_csv_raw',
+        START_TIME => DATEADD(hour, -1, CURRENT_TIMESTAMP())
+    )) ORDER BY LAST_LOAD_TIME DESC;
+
+    -- Snowpipe の停止
+    ALTER PIPE fsi_zts_101.raw_trade.trade_csv_pipe SET PIPE_EXECUTION_PAUSED = TRUE;
+--*/
+
+/*--
+    ★ 本番環境での Snowpipe セットアップ手順 (参考):
+
+    1. Storage Integration を作成 (IAM Role ベース)
+       CREATE STORAGE INTEGRATION s3_integration
+         TYPE = EXTERNAL_STAGE
+         STORAGE_PROVIDER = 'S3'
+         ENABLED = TRUE
+         STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/snowflake-role'
+         STORAGE_ALLOWED_LOCATIONS = ('s3://your-bucket/path/');
+
+    2. 外部ステージを Storage Integration 付きで作成
+       CREATE STAGE your_stage
+         URL = 's3://your-bucket/path/'
+         STORAGE_INTEGRATION = s3_integration;
+
+    3. Snowpipe を作成 (AUTO_INGEST = TRUE)
+
+    4. SHOW PIPES で notification_channel (SQS ARN) を取得
+
+    5. AWS Console → S3 → Event notifications で以下を設定:
+       - Event type: s3:ObjectCreated:*
+       - Prefix: your/path/
+       - Destination: SQS queue (上記 ARN)
+
+    6. 設定完了後、S3 にファイルを配置すれば自動で Snowpipe がトリガー
+
+    参考: https://docs.snowflake.com/ja/user-guide/data-load-snowpipe-auto-s3
+--*/
 
 
 /*----------------------------------------------------------------------------------

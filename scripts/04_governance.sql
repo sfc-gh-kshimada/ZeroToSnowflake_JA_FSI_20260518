@@ -281,7 +281,7 @@ USE ROLE fsi_admin;
 CREATE OR REPLACE ROW ACCESS POLICY fsi_zts_101.governance.branch_row_access
     AS (branch VARCHAR) RETURNS BOOLEAN ->
     -- 管理者・DE・開発者は全拠点アクセス可
-    CURRENT_ROLE() IN ('FSI_ADMIN', 'FSI_DATA_ENGINEER', 'FSI_DEVELOPER')
+    CURRENT_ROLE() IN ('FSI_ADMIN', 'FSI_DATA_ENGINEER', 'FSI_DEVELOPER', 'ACCOUNTADMIN')
     OR
     -- アナリストは Tokyo 拠点のみ
     (CURRENT_ROLE() = 'FSI_ANALYST' AND branch = 'Tokyo')

@@ -197,16 +197,18 @@ ORDER BY sentiment, cnt DESC;
 
 -- 3-3. negative センチメントの取引を抽出 (コンプライアンス要注意)
 --      実務ではこの結果を Dynamic Table やアラートに接続し、自動エスカレーションを構築できます
-SELECT
-    transaction_id,
-    trade_date,
-    booking_branch,
-    amount,
-    free_text_notes,
-    AI_SENTIMENT(free_text_notes):categories[0]:sentiment::VARCHAR AS sentiment
-FROM raw_trade.trade_transactions
-WHERE sentiment = 'negative'
-LIMIT 20;
+SELECT * FROM (
+    SELECT
+        transaction_id,
+        trade_date,
+        booking_branch,
+        amount,
+        free_text_notes,
+        AI_SENTIMENT(free_text_notes):categories[0]:sentiment::VARCHAR AS sentiment
+    FROM raw_trade.trade_transactions
+    LIMIT 100
+)
+WHERE sentiment = 'negative';
 
 
 /*----------------------------------------------------------------------------------
@@ -303,6 +305,7 @@ LIMIT 5;
 -- 5-1. Cortex Search Service の作成
 --      free_text_notes をセマンティック検索対象とし、取引属性を ATTRIBUTES に指定
 --      TARGET_LAG = '1 hour' でソーステーブル変更後 1 時間以内にインデックスを更新
+--      ※ ハンズオン高速化のため直近 3 ヶ月 (~163K 行) に絞る (全件: ~2M 行, 約 30 分)
 CREATE OR REPLACE CORTEX SEARCH SERVICE harmonized.trade_notes_search
     ON free_text_notes
     ATTRIBUTES transaction_type, booking_branch
@@ -317,6 +320,7 @@ AS (
         currency_code,
         amount
     FROM raw_trade.trade_transactions
+    WHERE trade_date >= DATEADD(month, -3, CURRENT_DATE())
 );
 
 -- 5-2. サービスが作成されたことを確認
@@ -330,7 +334,7 @@ SELECT
     results.value:free_text_notes::VARCHAR  AS free_text_notes,
     results.value:transaction_type::VARCHAR AS transaction_type,
     results.value:booking_branch::VARCHAR   AS booking_branch,
-    results.value:amount::NUMBER(18,2)      AS amount
+    TRY_TO_DECIMAL(results.value:amount::VARCHAR, 18, 2) AS amount
 FROM TABLE(
     FLATTEN(
         PARSE_JSON(
@@ -351,7 +355,7 @@ SELECT
     results.value:transaction_id::VARCHAR   AS transaction_id,
     results.value:free_text_notes::VARCHAR  AS free_text_notes,
     results.value:booking_branch::VARCHAR   AS booking_branch,
-    results.value:amount::NUMBER(18,2)      AS amount
+    TRY_TO_DECIMAL(results.value:amount::VARCHAR, 18, 2) AS amount
 FROM TABLE(
     FLATTEN(
         PARSE_JSON(
@@ -566,11 +570,265 @@ SHOW GRANTS OF ROLE fsi_dataiku_svc;
 
 
 -- =====================================================================
+-- [Option] Semantic View + Cortex Agent + Snowflake Intelligence
+-- =====================================================================
+
+/*----------------------------------------------------------------------------------
+ 9. [Option] Semantic View の作成 (Cortex Analyst 用)
+    -------------------------------------------------
+    Semantic View は SQL DDL でテーブルの「ビジネス上の意味」を定義するオブジェクトです。
+    YAML ファイル (FSI_TRADE_ANALYTICS.yaml) の代替として SQL で直接作成できます。
+
+    Cortex Analyst はこの Semantic View を参照して、
+    自然言語の質問 → SQL 変換 → 実行 → 回答 を行います。
+
+    公式ドキュメント:
+      https://docs.snowflake.com/ja/user-guide/snowflake-cortex/cortex-analyst/semantic-view
+----------------------------------------------------------------------------------*/
+
+USE ROLE fsi_data_engineer;
+USE DATABASE fsi_zts_101;
+USE WAREHOUSE fsi_cortex_wh;
+
+-- Semantic View: 貿易取引分析
+CREATE OR REPLACE SEMANTIC VIEW fsi_zts_101.semantic_layer.fsi_trade_analytics
+
+    TABLES (
+        TRADE_ORDERS AS fsi_zts_101.semantic_layer.trade_orders_v
+            WITH SYNONYMS = ('取引', '貿易', 'trade', 'transactions', '送金')
+            COMMENT = '貿易取引データ。拠点別・通貨別・顧客セグメント別の取引分析の起点。1行=1取引。',
+        CORPORATE_SALES AS fsi_zts_101.semantic_layer.corporate_sales_v
+            WITH SYNONYMS = ('営業', '案件', 'sales', 'deals', 'パイプライン')
+            COMMENT = '法人営業パイプラインデータ。営業担当別・業種別・地域別の受注分析用。1行=1案件。'
+    )
+
+    FACTS (
+        TRADE_ORDERS.AMOUNT AS AMOUNT
+            COMMENT = '取引金額 (各通貨建て)',
+        CORPORATE_SALES.OPPORTUNITY_AMOUNT AS OPPORTUNITY_AMOUNT
+            COMMENT = '案件見込み額 (円)'
+    )
+
+    DIMENSIONS (
+        TRADE_ORDERS.TRANSACTION_ID AS TRANSACTION_ID
+            COMMENT = '取引ID (一意)',
+        TRADE_ORDERS.CUSTOMER_ID AS CUSTOMER_ID
+            WITH SYNONYMS = ('顧客ID', 'customer')
+            COMMENT = '顧客ID',
+        TRADE_ORDERS.CUSTOMER_REGION AS CUSTOMER_REGION
+            WITH SYNONYMS = ('顧客リージョン', '地域', 'region')
+            COMMENT = '顧客の所属リージョン (Tokyo / US / UK / APAC / EU)',
+        TRADE_ORDERS.CUSTOMER_SEGMENT AS CUSTOMER_SEGMENT
+            WITH SYNONYMS = ('セグメント', 'segment', '顧客種別')
+            COMMENT = '顧客セグメント (CORPORATE / SME / RETAIL)',
+        TRADE_ORDERS.RISK_RATING AS RISK_RATING
+            WITH SYNONYMS = ('リスク格付', 'risk', 'リスク')
+            COMMENT = '顧客リスク格付け (LOW / MEDIUM / HIGH)',
+        TRADE_ORDERS.COUNTERPARTY_COUNTRY AS COUNTERPARTY_COUNTRY
+            WITH SYNONYMS = ('相手国', '取引先国', 'counterparty')
+            COMMENT = '取引相手国 (ISO 3166-1 alpha-2)',
+        TRADE_ORDERS.TRANSACTION_TYPE AS TRANSACTION_TYPE
+            WITH SYNONYMS = ('取引種別', '種別', 'type')
+            COMMENT = '取引種別 (IMPORT / EXPORT / REMITTANCE)',
+        TRADE_ORDERS.CURRENCY_CODE AS CURRENCY_CODE
+            WITH SYNONYMS = ('通貨', 'currency', '為替')
+            COMMENT = '取引通貨 (ISO 4217: JPY / USD / EUR / GBP 等)',
+        TRADE_ORDERS.BOOKING_BRANCH AS BOOKING_BRANCH
+            WITH SYNONYMS = ('拠点', '支店', 'branch', 'オフィス')
+            COMMENT = '記帳拠点 (Tokyo / NewYork / London / Singapore)',
+        TRADE_ORDERS.INSTRUMENT_TYPE AS INSTRUMENT_TYPE
+            WITH SYNONYMS = ('取引手段', 'instrument')
+            COMMENT = '取引手段 (LC=信用状 / TT=電信送金 / DOC_COLL=書類取立)',
+        TRADE_ORDERS.TRADE_DATE AS TRADE_DATE
+            WITH SYNONYMS = ('取引日', '日付', 'date')
+            COMMENT = '取引日',
+        TRADE_ORDERS.TRADE_YEAR AS YEAR(TRADE_DATE)
+            WITH SYNONYMS = ('年', 'year')
+            COMMENT = '取引年',
+        TRADE_ORDERS.TRADE_MONTH AS MONTH(TRADE_DATE)
+            WITH SYNONYMS = ('月', 'month')
+            COMMENT = '取引月',
+        CORPORATE_SALES.DEAL_ID AS DEAL_ID
+            COMMENT = '案件ID (一意)',
+        CORPORATE_SALES.SALES_REP AS SALES_REP
+            WITH SYNONYMS = ('営業担当', '担当者', 'rep')
+            COMMENT = '営業担当者',
+        CORPORATE_SALES.INDUSTRY AS INDUSTRY
+            WITH SYNONYMS = ('業種', 'industry', '業界')
+            COMMENT = '業種 (製造 / 金融 / IT / 小売 / サービス / 公共)',
+        CORPORATE_SALES.COMPANY_SIZE AS COMPANY_SIZE
+            WITH SYNONYMS = ('企業規模', 'size', '規模')
+            COMMENT = '企業規模 (大手 / 中堅 / 中小)',
+        CORPORATE_SALES.STAGE AS STAGE
+            WITH SYNONYMS = ('ステージ', 'stage', '案件状態', 'フェーズ')
+            COMMENT = '案件ステージ (提案 / 見積 / 受注 / 失注)',
+        CORPORATE_SALES.REGION AS REGION
+            WITH SYNONYMS = ('営業地域', '地域', 'area')
+            COMMENT = '営業地域 (関東 / 関西 / 中部 / 九州 / 海外)',
+        CORPORATE_SALES.EXPECTED_CLOSE_DATE AS EXPECTED_CLOSE_DATE
+            WITH SYNONYMS = ('受注予定日', 'close date')
+            COMMENT = '受注予定日'
+    )
+
+    METRICS (
+        TRADE_ORDERS.TOTAL_TRADE_AMOUNT AS SUM(TRADE_ORDERS.AMOUNT)
+            WITH SYNONYMS = ('取引総額', '総額', 'total amount', '売上')
+            COMMENT = '取引金額の合計',
+        TRADE_ORDERS.TRADE_COUNT AS COUNT(TRADE_ORDERS.TRANSACTION_ID)
+            WITH SYNONYMS = ('取引件数', '件数', 'count', '取引数')
+            COMMENT = '取引の総件数',
+        TRADE_ORDERS.AVG_TRADE_AMOUNT AS AVG(TRADE_ORDERS.AMOUNT)
+            WITH SYNONYMS = ('平均取引額', '平均額', 'average')
+            COMMENT = '1取引あたりの平均金額',
+        CORPORATE_SALES.TOTAL_PIPELINE AS SUM(CORPORATE_SALES.OPPORTUNITY_AMOUNT)
+            WITH SYNONYMS = ('パイプライン総額', 'pipeline', '見込み総額')
+            COMMENT = '案件見込み額の合計',
+        CORPORATE_SALES.DEAL_COUNT AS COUNT(CORPORATE_SALES.DEAL_ID)
+            WITH SYNONYMS = ('案件数', 'deals', '案件件数')
+            COMMENT = '案件の総件数',
+        CORPORATE_SALES.WIN_RATE AS COUNT_IF(CORPORATE_SALES.STAGE = '受注') / NULLIF(COUNT_IF(CORPORATE_SALES.STAGE IN ('受注', '失注')), 0)
+            WITH SYNONYMS = ('受注率', 'win rate', '成約率')
+            COMMENT = '受注率 (受注件数 / (受注+失注)件数)'
+    )
+
+    COMMENT = 'FSI 貿易取引 + 法人営業の統合分析用セマンティックビュー。Cortex Analyst で自然言語クエリ可能。'
+
+    AI_SQL_GENERATION $$
+このセマンティックビューは金融サービス業界の貿易取引データと法人営業パイプラインデータの分析用です。
+
+数値フォーマット:
+- 金額は小数点以下を省略し、カンマ区切りで表示（ROUND(..., 0) + TO_CHAR(..., '999,999,999,999')）
+- 比率は % 表記で小数点第1位まで (ROUND(...*100, 1) || '%')
+
+デフォルト設定:
+- 期間指定がない場合は全期間のデータを使用
+- TOP N の指定がない場合はデフォルト上位10件
+
+取引データ:
+- 通貨が混在するため、通貨別に集計すること (通貨を跨いだ合算は避ける)
+- 拠点別分析は BOOKING_BRANCH でグループ化
+- 取引種別は TRANSACTION_TYPE (IMPORT / EXPORT / REMITTANCE)
+
+営業データ:
+- 受注率は (受注件数 / (受注+失注)件数) で計算 (提案・見積は分母に含めない)
+- パイプライン残高は stage IN ('提案', '見積') の見込み額合計
+
+曖昧な質問への対応:
+- 「取引を分析して」→ 通貨別 × 拠点別の取引件数と金額を返す
+- 「営業の状況は」→ 営業担当者別の案件数・受注率・パイプライン残高を返す
+$$
+    COPY GRANTS;
+
+-- Semantic View の確認
+SHOW SEMANTIC VIEWS IN SCHEMA fsi_zts_101.semantic_layer;
+DESC SEMANTIC VIEW fsi_zts_101.semantic_layer.fsi_trade_analytics;
+
+
+/*----------------------------------------------------------------------------------
+ 10. [Option] Cortex Agent — BI エージェントの構築
+    -------------------------------------------------
+    Cortex Agent は、Cortex Search と Cortex Analyst (Semantic View) を束ねて
+    自律的に動作する AI エージェントです。
+
+    Agent は fsi_zts_101.semantic_layer に作成します
+    (snowflake_intelligence DB への作成は非推奨)。
+----------------------------------------------------------------------------------*/
+
+-- Agent 作成権限の付与
+USE ROLE accountadmin;
+GRANT CREATE AGENT ON SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_developer;
+USE ROLE fsi_developer;
+
+-- Cortex Agent の作成
+CREATE OR REPLACE AGENT fsi_zts_101.semantic_layer.fsi_trade_bi_agent
+    COMMENT = '貿易取引の意味検索と数値分析を横断的に行う FSI BI エージェント'
+FROM SPECIFICATION $$
+{
+  "instructions": {
+    "response": "あなたは金融サービス企業の高度なトレード分析アシスタントです。2つの専門ツールを使い分けて、ユーザーの質問に日本語で丁寧に回答してください。数値データは適切にフォーマットしてください（金額はカンマ区切り、比率は%表記）。",
+    "orchestration": "ツールの使い分けルール:\n\n(1) 取引コメントの検索・コンプライアンス関連メモの確認\n    → TRADE_SEARCH を使用\n\n(2) 取引額・件数・通貨別集計・拠点別分析など数値の質問\n    → TRADE_ANALYST を使用\n\n複合的な質問:\nまず TRADE_SEARCH で関連コメントを確認し、TRADE_ANALYST で数値を分析。",
+    "sample_questions": [
+      {"question": "通貨別の取引額トップ5を教えてください。"},
+      {"question": "コンプライアンス上の懸念がある取引コメントを検索して。"},
+      {"question": "東京拠点の月別取引件数の推移を見せてください。"},
+      {"question": "営業担当者別の受注率ランキングは？"},
+      {"question": "大口取引に付されたコメントの傾向は？"}
+    ]
+  },
+  "tools": [
+    {
+      "tool_spec": {
+        "type": "cortex_analyst_text_to_sql",
+        "name": "TRADE_ANALYST",
+        "description": "FSI 貿易取引・法人営業データの数値分析。取引金額集計、通貨別・拠点別分析、営業パイプライン、受注率計算に使用。"
+      }
+    },
+    {
+      "tool_spec": {
+        "type": "cortex_search",
+        "name": "TRADE_SEARCH",
+        "description": "取引コメントの意味検索。コンプライアンス懸念・緊急対応・VIP対応など特定パターンの取引メモを検索。"
+      }
+    }
+  ],
+  "tool_resources": {
+    "TRADE_ANALYST": {
+      "semantic_view": "fsi_zts_101.semantic_layer.fsi_trade_analytics",
+      "execution_environment": {"type": "warehouse", "warehouse": "FSI_CORTEX_WH"}
+    },
+    "TRADE_SEARCH": {
+      "name": "fsi_zts_101.harmonized.trade_notes_search",
+      "max_results": 10
+    }
+  }
+}
+$$;
+
+SHOW AGENTS IN SCHEMA fsi_zts_101.semantic_layer;
+
+
+/*----------------------------------------------------------------------------------
+ 11. [Option] Snowflake Intelligence — 会話型 BI インターフェース
+    -------------------------------------------------
+    Snowflake Intelligence は、Cortex Agent を Snowsight の
+    統合インターフェースから利用できるようにする機能です。
+----------------------------------------------------------------------------------*/
+
+USE ROLE accountadmin;
+
+-- Snowflake Intelligence オブジェクトの作成
+CREATE SNOWFLAKE INTELLIGENCE IF NOT EXISTS SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
+
+-- エージェントを Snowflake Intelligence に追加
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+  ADD AGENT fsi_zts_101.semantic_layer.fsi_trade_bi_agent;
+
+/*--
+    Snowflake Intelligence へのアクセス:
+
+    1. Snowsight → [AI & ML Studio] → [Snowflake Intelligence]
+    2. エージェント 'fsi_trade_bi_agent' を選択
+    3. 自然言語で質問:
+       - 「通貨別の取引額を教えて」
+       - 「東京拠点の先月の取引件数は？」
+       - 「コンプライアンス上の懸念があるコメントを検索して」
+       - 「営業担当者別の受注率ランキングは？」
+--*/
+
+
+-- =====================================================================
 -- ハンズオン終了後のクリーンアップ (必要に応じて実行)
 -- =====================================================================
 
 -- Cortex Search Service を削除 (検索インデックス分のストレージを解放)
 -- DROP CORTEX SEARCH SERVICE IF EXISTS harmonized.trade_notes_search;
+
+-- Cortex Agent を削除
+-- DROP AGENT IF EXISTS snowflake_intelligence.agents.fsi_trade_bi_agent;
+
+-- Snowflake Intelligence からエージェントを解除
+-- ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+--   DROP AGENT snowflake_intelligence.agents.fsi_trade_bi_agent;
 
 -- ウェアハウスを SUSPEND (コスト最適化)
 -- ALTER WAREHOUSE fsi_cortex_wh SUSPEND;
