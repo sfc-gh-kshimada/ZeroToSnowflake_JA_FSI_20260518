@@ -1,22 +1,21 @@
 /***************************************************************************************************
-Asset:        FSI Zero to Snowflake - データロード (S3 / Snowpipe / XML)
-Version:      v1
+Asset:        FSI Zero to Snowflake - データロード (Git Integration → 内部ステージ → COPY INTO)
+Version:      v1 (fallback: S3 が利用不可の場合)
 Audience:     金融サービス業界 (FSI) 向けハンズオン
 Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any specific institution.
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
 セクション 2(a) - データロード
-  1. ステージの確認とファイル一覧
-  2. CSV からの COPY INTO
-  3. JSON からの COPY INTO (VARIANT)
-  4. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO ★メイン
-  5. Snowpipe 構文紹介 (参考)
-  6. まとめ
+  1. CSV からの COPY INTO
+  2. JSON からの COPY INTO (VARIANT)
+  3. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO ★メイン
+  4. Snowpipe 構文紹介 (参考)
+  5. まとめ
 
 前提条件:
-  - setup.sql を実行済み (データベース・スキーマ・テーブル・ステージ・ファイルフォーマット作成済み)
-  - assets/sample_data/swift_xml/ 配下の XML ファイルを
-    Snowsight UI からステージ @fsi_zts_101.raw_trade.xml_stage にアップロード済み
+  - fallback/setup.sql を実行済み (データベース・スキーマ・テーブル・ステージ・ファイルフォーマット作成済み)
+  - setup.sql の Section 8 で Git リポジトリからサンプルデータを内部ステージに転送済み
+    (COPY FILES INTO @内部ステージ FROM @fsi_zts_repo/branches/main/assets/...)
 ****************************************************************************************************/
 
 -- セッションにクエリタグを設定する (利用状況トラッキング用)
@@ -38,18 +37,18 @@ USE DATABASE fsi_zts_101;
       - ON_ERROR = 'CONTINUE' でエラー行をスキップして残りを取り込む
       - COPY INTO は冪等 (同一ファイルの再ロードは自動でスキップ)
 ----------------------------------------------------------------------------------*/
+-- 前提: setup.sql の Section 8 で Git リポジトリから内部ステージに転送済み
+--   COPY FILES INTO @fsi_zts_101.raw_trade.csv_stage
+--     FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
 
 COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
     (transaction_id, trade_date, settlement_date, customer_id,
      counterparty_country, transaction_type, currency_code, amount,
      booking_branch, instrument_type, free_text_notes, source_file)
 FROM (
-    SELECT
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        METADATA$FILENAME
-    FROM @fsi_zts_101.raw_trade.s3_assets_stage/trade_csv/
+    SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, METADATA$FILENAME
+    FROM @fsi_zts_101.raw_trade.csv_stage
 )
-FILE_FORMAT = fsi_zts_101.public.csv_ff
 ON_ERROR = 'CONTINUE';
 
 -- 結果確認: 件数・日付範囲
@@ -73,15 +72,12 @@ FROM fsi_zts_101.raw_trade.trade_transactions_csv_raw;
       - スキーマ変更に強い (新しいキーが追加されても取り込み側の変更不要)
 ----------------------------------------------------------------------------------*/
 
-COPY INTO fsi_zts_101.raw_customer.customers_json_raw
-    (raw_payload, source_file)
-FROM (
-    SELECT
-        $1,
-        METADATA$FILENAME
-    FROM @fsi_zts_101.raw_trade.s3_assets_stage/customer_json/
-)
-FILE_FORMAT = fsi_zts_101.public.json_ff
+-- 前提: setup.sql の Section 8 で Git リポジトリから内部ステージに転送済み
+--   COPY FILES INTO @fsi_zts_101.raw_trade.json_stage
+--     FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/customer_json/;
+
+COPY INTO fsi_zts_101.raw_customer.customers_json_raw (raw_payload, source_file)
+FROM (SELECT $1, METADATA$FILENAME FROM @fsi_zts_101.raw_trade.json_stage)
 ON_ERROR = 'CONTINUE';
 
 -- 結果確認
@@ -122,7 +118,8 @@ LIMIT 10;
       - VARIANT に格納された XML は XMLGET() / : / @ で要素・属性にアクセス
 ----------------------------------------------------------------------------------*/
 
--- 3.1 COPY INTO: XML ファイルを S3 外部ステージから VARIANT 列へ取り込み
+-- 3.1 COPY INTO: 内部ステージの XML ファイルを VARIANT 列へ取り込み
+--     前提: setup.sql の Section 8 で Git リポジトリから内部ステージに転送済み
 COPY INTO fsi_zts_101.raw_trade.swift_messages_xml
     (message_id, received_at, message_type, payload, source_file)
 FROM (
@@ -137,7 +134,7 @@ FROM (
         END                                                    AS message_type,
         $1                                                     AS payload,
         METADATA$FILENAME                                      AS source_file
-    FROM @fsi_zts_101.raw_trade.s3_assets_stage/swift_xml/
+    FROM @fsi_zts_101.raw_trade.xml_stage
 )
 FILE_FORMAT = (TYPE = 'XML')
 ON_ERROR = 'CONTINUE';

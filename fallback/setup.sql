@@ -203,11 +203,19 @@ CREATE OR REPLACE FILE FORMAT fsi_zts_101.public.xml_ff
 TYPE = 'XML'
 STRIP_OUTER_ELEMENT = TRUE;
 
--- S3 外部ステージ 
--- サンプルデータは s3://sfse-handson-kshimada/fsi-zts/assets/ に事前配置済み
-CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.s3_assets_stage
-URL = 's3://sfse-handson-kshimada/fsi-zts/assets/'
-COMMENT = 'サンプルデータ格納用 S3 外部ステージ';
+-- データ形式別の内部ステージ (Git リポジトリ → COPY FILES → 内部ステージ → COPY INTO で取り込む)
+-- Section 8 で Git リポジトリからファイルを転送し、Section 2 で COPY INTO テーブルに取り込む
+CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.csv_stage
+COMMENT = 'CSV ファイル取り込み用の内部ステージ'
+FILE_FORMAT = fsi_zts_101.public.csv_ff;
+
+CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.json_stage
+COMMENT = 'JSON ファイル取り込み用の内部ステージ'
+FILE_FORMAT = fsi_zts_101.public.json_ff;
+
+CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.xml_stage
+COMMENT = 'XML (SWIFT MX 電文 ISO 20022) ファイル取り込み用の内部ステージ'
+FILE_FORMAT = fsi_zts_101.public.xml_ff;
 
 -- Excel 取り込み用ステージ (セクション 2(b) で使用)
 CREATE OR REPLACE STAGE fsi_zts_101.raw_excel.excel_demo_stage
@@ -269,8 +277,8 @@ CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.trade_transactions
 );
 
 -- セクション 2(a) で XML ファイル (ISO 20022 SWIFT MX 電文 pacs.008 / camt.053) から取り込む先
--- setup 時点では空。assets/sample_data/swift_xml/ 配下の XML を (Stage に PUT した後に ← バックアップの方法、本ハンズオンではS3から直接格納)
--- COPY INTO ... FILE_FORMAT = (TYPE = 'XML') で VARIANT 列に取り込みます。
+-- setup 時点では空。Section 8 で Git リポジトリから内部ステージに転送後、
+-- Section 2(a) の COPY INTO で VARIANT 列に取り込みます。
 -- 取り込み後は XMLGET / : (パス記法) で MsgId / Amt / Ccy などの要素を抽出します。
 CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.swift_messages_xml
 (
@@ -327,7 +335,7 @@ CREATE OR REPLACE TABLE fsi_zts_101.raw_excel.corporate_sales
 );
 
 /*--
- 5. 合成データの投入 (GENERATOR を使用)
+ 5. 合成データの投入 (GENERATOR を使用、外部 S3 不要)
     注: SWIFT MX 風 XML / 補完用 CSV / JSON はファイルとして
         セクション 2(a) でアップロード→ COPY INTO します。
 --*/
@@ -715,27 +723,51 @@ USE ROLE accountadmin;
 ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_JP';
 
 /*--
- 8. S3 外部ステージからのファイル転送
+ 8. Git リポジトリ統合
     ────────────────────────────────────────────────────────────────
-    S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO ← 本ハンズオンではこちらがメイン
+    GitHub リポジトリを Snowflake Workspaces に接続 → SQL ファイルを Snowsight で編集・実行
 --*/
 
--- S3 外部ステージからデータを準備
--- CSV / JSON / XML: セクション 2(a) で外部ステージから直接 COPY INTO テーブル (内部ステージ不要)
--- Excel: SP の get_stream が内部ステージを必要とするため、COPY FILES で内部ステージに転送
+-- 8.1 API Integration (GitHub HTTPS 用 — Workspaces 連携)
+CREATE OR REPLACE API INTEGRATION git_api_integration
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kshimada/')
+    ENABLED = TRUE;
 
--- S3 外部ステージの内容確認
-LIST @fsi_zts_101.raw_trade.s3_assets_stage/swift_xml/;
-LIST @fsi_zts_101.raw_trade.s3_assets_stage/trade_csv/;
-LIST @fsi_zts_101.raw_trade.s3_assets_stage/customer_json/;
-LIST @fsi_zts_101.raw_trade.s3_assets_stage/excel/;
+-- 8.2 Git Repository オブジェクト作成 (SQL ファイル用 — Workspaces から接続)
+CREATE OR REPLACE GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo
+    API_INTEGRATION = git_api_integration
+    ORIGIN = 'https://github.com/sfc-gh-kshimada/ZeroToSnowflake_JA_FSI_20260518.git';
 
--- Excel のみ内部ステージへ転送 (SP の session.file.get_stream は内部ステージが必要)
-COPY FILES
-  INTO @fsi_zts_101.raw_excel.excel_demo_stage
-  FROM @fsi_zts_101.raw_trade.s3_assets_stage/excel/;
+ALTER GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo FETCH;
 
--- Excel 転送結果確認
+-- 8.3 Git リポジトリからサンプルデータを内部ステージに転送
+--     S3 外部ステージが使えない場合のフォールバック経路:
+--       Git Repository Stage → COPY FILES → 内部ステージ → COPY INTO テーブル (Section 2)
+--
+--     ※ Git Repository Stage から直接 COPY INTO テーブルはサポートされていないため、
+--       必ず内部ステージを経由する必要がある
+
+-- CSV サンプルデータ → 内部ステージ
+COPY FILES INTO @fsi_zts_101.raw_trade.csv_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
+
+-- JSON サンプルデータ → 内部ステージ
+COPY FILES INTO @fsi_zts_101.raw_trade.json_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/customer_json/;
+
+-- XML (SWIFT MX 電文) サンプルデータ → 内部ステージ
+COPY FILES INTO @fsi_zts_101.raw_trade.xml_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/swift_xml/;
+
+-- Excel サンプルデータ → 内部ステージ (SP の session.file.get_stream 用)
+COPY FILES INTO @fsi_zts_101.raw_excel.excel_demo_stage
+  FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/excel/;
+
+-- 転送結果確認
+LIST @fsi_zts_101.raw_trade.csv_stage;
+LIST @fsi_zts_101.raw_trade.json_stage;
+LIST @fsi_zts_101.raw_trade.xml_stage;
 LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
 /*--
@@ -747,7 +779,7 @@ ALTER WAREHOUSE fsi_de_wh SET WAREHOUSE_SIZE = 'XSmall';
 
 -- セットアップ完了
 SELECT '✓ FSI Zero To Snowflake セットアップが完了しました。' AS status,
-       'fsi_zts_101 データベース・スキーマ・ロール・合成データ・S3連携・Git連携 が利用可能です。' AS message,
+       'fsi_zts_101 データベース・スキーマ・ロール・合成データ・Git連携 が利用可能です。' AS message,
        '次のステップ: Snowsight Workspaces で「From Git repository」から https://github.com/sfc-gh-kshimada/ZeroToSnowflake_JA_FSI_20260518 へ接続し、' ||
        'scripts/ 配下の SQL を順次実行してください。' ||
-       'サンプルデータは S3 (s3://sfse-handson-kshimada/fsi-zts/assets/) から内部ステージに転送済みです。' AS next_step;
+       'サンプルデータは Git リポジトリから内部ステージに転送済みです。' AS next_step;
