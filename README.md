@@ -49,18 +49,17 @@ FSI 向け Zero to Snowflake ハンズオンへようこそ。
 4. エディタ左上の **Run All** ボタンですべて実行します。
 5. 末尾のステータス行で `✓ FSI Zero To Snowflake セットアップが完了しました。` が表示されれば成功です。
 
-### ステップ 3: サンプルファイルのアップロード (本ハンズオンでは不要だが、バックアップとして記載)
+### ステップ 3: 各セクションの SQL を順次実行
+
+セクション 1 から順に [`scripts/`](scripts/) 配下の SQL を新規 SQL ファイルとして開き、実行します。
+
+### 補足: サンプルファイルのアップロード (s3外部ステージが動かない場合のフォールバックとして記載)
 
 セクション 2(a) で取り込む CSV / JSON / XML、セクション 2(b) で取り込む Excel ファイルを Snowsight から内部ステージにアップロードします。
 - `assets/sample_data/trade_csv/*.csv` → `@fsi_zts_101.raw_trade.csv_stage`
 - `assets/sample_data/customer_json/*.json` → `@fsi_zts_101.raw_trade.json_stage`
 - `assets/sample_data/swift_xml/*.xml` (SWIFT MX 電文 ISO 20022: pacs.008 / camt.053) → `@fsi_zts_101.raw_trade.xml_stage`
 - `assets/excel/corporate_sales_data.xlsx` (法人営業データ 100 行) → `@fsi_zts_101.raw_excel.excel_demo_stage`
-
-### ステップ 4: 各セクションの SQL を順次実行
-
-セクション 1 から順に [`scripts/`](scripts/) 配下の SQL を新規 SQL ファイルとして開き、実行します。
-ノートブック形式の補完資料は [`scripts/streamlit_app.py`](scripts/streamlit_app.py) 等を参照してください。
 
 ---
 
