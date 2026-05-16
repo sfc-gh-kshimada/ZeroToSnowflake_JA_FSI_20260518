@@ -12,10 +12,8 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
   3. ファイルフォーマット・内部ステージ (CSV / JSON / XML) の作成
   4. RAW ゾーンのテーブル定義 (貿易取引・顧客・参照データ・SWIFT 電文・Excel 取り込み先)
   5. 合成データ投入 (GENERATOR を使用、外部 S3 不要)
-       注: SWIFT MX 風 XML / 補完用 CSV / JSON はファイルとしてセクション 2(a) で
-           ステージへアップロード → COPY INTO で取り込みます (assets/sample_data/ 参照)
   6. Harmonized / Analytics / Semantic Layer のビュー作成
-  7. Cortex / クロスリージョン設定 ('AWS_JP' で東京/大阪のみに限定)
+  7. Cortex / クロスリージョン設定 ('AWS_JP' で日本のみに限定)
   8. ウェアハウスのスケールダウン
 
 実行ロール: ACCOUNTADMIN を推奨 (ハンズオン参加者は専用のトライアルアカウントを利用)
@@ -169,13 +167,6 @@ GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_admin;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_data_engineer;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_developer;
 
--- Dataiku サービスロール: 必要最小権限 (USAGE と SELECT のみ、書き込みなし)
-GRANT USAGE ON WAREHOUSE fsi_de_wh TO ROLE fsi_dataiku_svc;
-GRANT SELECT ON ALL TABLES IN SCHEMA fsi_zts_101.harmonized TO ROLE fsi_dataiku_svc;
-GRANT SELECT ON ALL VIEWS  IN SCHEMA fsi_zts_101.analytics  TO ROLE fsi_dataiku_svc;
-GRANT SELECT ON FUTURE TABLES IN SCHEMA fsi_zts_101.harmonized TO ROLE fsi_dataiku_svc;
-GRANT SELECT ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.analytics  TO ROLE fsi_dataiku_svc;
-
 -- 将来テーブル / ビューへの自動権限付与
 GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_trade    TO ROLE fsi_admin;
 GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_trade    TO ROLE fsi_data_engineer;
@@ -250,13 +241,13 @@ STRIP_OUTER_ELEMENT = TRUE;
 
 -- S3 外部ステージ 
 -- サンプルデータは s3://sfse-handson-kshimada/fsi-zts/assets/ に事前配置済み
--- CREDENTIALS = () で Storage Integration を使用しない (IP 制限で保護)
 CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.s3_assets_stage
 URL = 's3://sfse-handson-kshimada/fsi-zts/assets/'
 CREDENTIALS = ()
 COMMENT = 'サンプルデータ格納用 S3 外部ステージ';
 
 -- データ形式別の内部ステージ (S3 → 内部ステージにコピー後、COPY INTO で取り込む)
+-- 外部ステージが動作しない場合のバックアップとして以下3つを作成
 CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.csv_stage
 COMMENT = 'CSV ファイル取り込み用の内部ステージ'
 FILE_FORMAT = fsi_zts_101.public.csv_ff;
@@ -329,7 +320,7 @@ CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.trade_transactions
 );
 
 -- セクション 2(a) で XML ファイル (ISO 20022 SWIFT MX 電文 pacs.008 / camt.053) から取り込む先
--- setup 時点では空。assets/sample_data/swift_xml/ 配下の XML を Stage に PUT した後に
+-- setup 時点では空。assets/sample_data/swift_xml/ 配下の XML を (Stage に PUT した後に ← バックアップの方法、本ハンズオンではS3から直接格納)
 -- COPY INTO ... FILE_FORMAT = (TYPE = 'XML') で VARIANT 列に取り込みます。
 -- 取り込み後は XMLGET / : (パス記法) で MsgId / Amt / Ccy などの要素を抽出します。
 CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.swift_messages_xml
@@ -370,7 +361,7 @@ CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.trade_transactions_csv_raw
 -- 手動 Excel 取り込み先: 法人営業 (Corporate Sales) データ
 -- セクション 2(b) で assets/excel/corporate_sales_data.xlsx (100 行) を
 -- @raw_excel.excel_demo_stage に PUT → Snowpark Stored Procedure で取り込みます。
--- ユースケース: 法人向け営業活動データを Tableau / Streamlit で可視化・分析
+-- ユースケース: 法人向け営業活動データをより高度に 可視化・分析 
 CREATE OR REPLACE TABLE fsi_zts_101.raw_excel.corporate_sales
 (
     deal_id              VARCHAR(20),       -- 案件ID
@@ -820,8 +811,8 @@ ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_JP';
 /*--
  8. Git リポジトリ統合 + S3 外部ステージからのファイル転送
     ────────────────────────────────────────────────────────────────
-    (A) GitHub リポジトリを Snowflake Workspaces に接続 → SQL ファイルを Snowsight で編集・実行
-    (B) S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO
+    (A) GitHub リポジトリを Snowflake Workspaces に接続 → SQL ファイルを Snowsight で編集・実行 ← バックアップ手法
+    (B) S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO ← 本ハンズオンではこちらがメイン
 --*/
 
 -- 8.1 API Integration (GitHub HTTPS 用 — Workspaces 連携)

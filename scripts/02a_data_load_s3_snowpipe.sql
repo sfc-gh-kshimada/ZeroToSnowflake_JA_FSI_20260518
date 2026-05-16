@@ -5,7 +5,7 @@ Audience:     金融サービス業界 (FSI) 向けハンズオン
 Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any specific institution.
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
-セクション 2(a) - データロード (15 分)
+セクション 2(a) - データロード
   1. ステージの確認とファイル一覧
   2. CSV からの COPY INTO
   3. JSON からの COPY INTO (VARIANT)

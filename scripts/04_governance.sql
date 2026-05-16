@@ -5,7 +5,7 @@ Audience:     金融サービス業界 (FSI) 向けハンズオン
 Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any specific institution.
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
-セクション 4 - ガバナンス (40 分)
+セクション 4 - ガバナンス 
   1. タグの作成と付与
   2. ダイナミックデータマスキング (タグベース)
   3. 行アクセスポリシー (Row Access Policy)
@@ -258,9 +258,6 @@ LIMIT 5;
     金融機関での典型的なユースケース:
       A) 拠点別データ分離: Tokyo 拠点の担当者は Tokyo の取引のみ閲覧
       B) 営業担当者別の案件フィルタ: 自分が担当する案件のみ閲覧
-
-    本セクションではシナリオ A (拠点別) を実装し、
-    シナリオ B (営業担当者別) はパターン紹介にとどめます。
 
     公式ドキュメント:
       https://docs.snowflake.com/ja/user-guide/security-row-intro
@@ -558,23 +555,6 @@ ORDER BY column_name;
     │ Trust Center       │ セキュリティリスクの包括的スキャン      │
     └────────────────────┴──────────────────────────────────────┘
 
-    銀行の AD グループ → Snowflake ロール マッピング設計パターン:
-    ─────────────────────────────────────────────────
-    実際の運用では、Active Directory (AD) グループと Snowflake ロールを
-    SCIM プロビジョニング等で同期し、以下のような構成にします:
-
-    ┌───────────────────────┬──────────────────────┬────────────────────────────┐
-    │ AD グループ            │ Snowflake ロール      │ アクセス範囲               │
-    ├───────────────────────┼──────────────────────┼────────────────────────────┤
-    │ BK-DATA-ADMIN         │ FSI_ADMIN            │ 全スキーマ・全拠点 (平文)   │
-    │ BK-DATA-ENGINEER      │ FSI_DATA_ENGINEER    │ 全スキーマ・全拠点 (平文)   │
-    │ BK-DEVELOPER          │ FSI_DEVELOPER        │ 開発系スキーマのみ          │
-    │ BK-ANALYST-TOKYO      │ FSI_ANALYST          │ harmonized/analytics       │
-    │                       │                      │ (PII マスク + Tokyo のみ)  │
-    │ BK-ANALYST-NEWYORK    │ FSI_ANALYST_NY       │ harmonized/analytics       │
-    │                       │                      │ (PII マスク + NewYork のみ) │
-    │ BK-EXTERNAL-VENDOR    │ FSI_READONLY         │ analytics のみ (全マスク)   │
-    └───────────────────────┴──────────────────────┴────────────────────────────┘
 
     これにより「AD グループへの追加 = Snowflake での権限自動付与」が実現し、
     入退社・異動時の権限管理が自動化されます。

@@ -6,7 +6,7 @@ Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 ****************************************************************************************************
 
-Snowflake 入門 ― Getting Started (45 分)
+Snowflake 入門 ― Getting Started
 
   1. Snowflake UI ツアー (説明のみ)
   2. 仮想ウェアハウスの探索
@@ -32,8 +32,6 @@ USE WAREHOUSE fsi_de_wh;
 /*----------------------------------------------------------------------------------
   1. Snowflake UI ツアー
 ----------------------------------------------------------------------------------
-
-  ここでは SQL は実行しません。講師と一緒に Snowsight の画面を確認しましょう。
 
   ■ メインメニュー (左側ナビゲーション)
     - Workspaces   : SQL ワークシート / ノートブック / Streamlit アプリ
