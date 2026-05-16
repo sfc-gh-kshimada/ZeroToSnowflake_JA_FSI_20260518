@@ -150,7 +150,7 @@ ALTER WAREHOUSE fsi_de_wh RESUME;
 
 /*
     AUTO_RESUME = TRUE に設定されているため、クエリを実行すると自動的に再開されます。
-    実務では AUTO_SUSPEND を短め (60 秒) に設定し、不要なクレジット消費を抑えるのが一般的です。
+    実務では AUTO_SUSPEND を適切な時間 に設定し、不要なクレジット消費を抑えるのが一般的です。
 */
 
 
@@ -185,7 +185,7 @@ GROUP BY booking_branch, currency_code
 ORDER BY total_amount DESC;
 
 /*
-    Query Details の「Duration」を確認してください (例: 1〜2 秒程度)
+    Query Details の「Duration」を確認してください (例: 1 秒程度)
 */
 
 -- 2 回目: 全く同じクエリをもう一度実行してください

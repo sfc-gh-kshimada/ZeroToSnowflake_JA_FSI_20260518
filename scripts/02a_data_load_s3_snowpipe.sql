@@ -27,30 +27,7 @@ USE WAREHOUSE fsi_de_wh;
 USE DATABASE fsi_zts_101;
 
 /*----------------------------------------------------------------------------------
- 1. ステージの確認とファイル一覧
-    -------------------------------------------------
-    setup.sql で作成した 3 つの内部ステージにファイルが存在するかを確認します。
-    まだアップロードしていない場合は Snowsight の左メニュー Data > Databases から
-    該当ステージを開き、[+ Files] ボタンでアップロードしてください。
-
-    対応するサンプルファイル:
-      - CSV:  assets/sample_data/trade_csv/       → @raw_trade.csv_stage
-      - JSON: assets/sample_data/customer_json/   → @raw_trade.json_stage
-      - XML:  assets/sample_data/swift_xml/       → @raw_trade.xml_stage
-----------------------------------------------------------------------------------*/
-
--- CSV ステージのファイル一覧
-LIST @fsi_zts_101.raw_trade.csv_stage;
-
--- JSON ステージのファイル一覧
-LIST @fsi_zts_101.raw_trade.json_stage;
-
--- XML ステージのファイル一覧 (pacs.008 / camt.053 の SWIFT MX サンプル)
-LIST @fsi_zts_101.raw_trade.xml_stage;
-
-
-/*----------------------------------------------------------------------------------
- 2. CSV からの COPY INTO
+ 1. CSV からの COPY INTO
     -------------------------------------------------
     CSV ファイルを raw_trade.trade_transactions_csv_raw テーブルへロードします。
     ステージ作成時に FILE_FORMAT = fsi_zts_101.public.csv_ff を紐づけ済みのため、
@@ -102,22 +79,6 @@ FROM (
 ON_ERROR = 'CONTINUE';
 --*/
 
-/*-- 代替パターン (バックアップ):
-
-    -- パターン A: 内部ステージ経由 (事前に COPY FILES で S3 → 内部ステージに転送済みの場合)
-    COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw (...)
-    FROM (SELECT ... FROM @fsi_zts_101.raw_trade.csv_stage)
-    ON_ERROR = 'CONTINUE';
-
-    -- パターン B: Git Repository 経由 (COPY FILES で Git → 内部ステージに転送後)
-    -- ※ Git Stage からの直接 COPY INTO は非対応。事前に COPY FILES が必要:
-    --   COPY FILES INTO @fsi_zts_101.raw_trade.csv_stage
-    --     FROM @fsi_zts_101.public.fsi_zts_repo/branches/main/assets/sample_data/trade_csv/;
-    COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw (...)
-    FROM (SELECT ... FROM @fsi_zts_101.raw_trade.csv_stage)
-    ON_ERROR = 'CONTINUE';
---*/
-
 -- 結果確認: 件数・日付範囲
 SELECT
     COUNT(*)            AS row_count,
@@ -127,7 +88,7 @@ SELECT
 FROM fsi_zts_101.raw_trade.trade_transactions_csv_raw;
 
 /*----------------------------------------------------------------------------------
- 3. JSON からの COPY INTO (VARIANT)
+ 2. JSON からの COPY INTO (VARIANT)
     -------------------------------------------------
     JSON ファイルを raw_customer.customers_json_raw テーブルへロードします。
     JSON は VARIANT 型カラムにそのまま格納し、後から : (パス記法) で展開します。
@@ -183,7 +144,7 @@ LIMIT 10;
 
 
 /*----------------------------------------------------------------------------------
- 4. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO  ★メインセクション
+ 3. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO  ★メインセクション
     -------------------------------------------------
     ISO 20022 準拠の SWIFT MX 電文 (XML) を VARIANT 型として取り込み、
     XMLGET 関数や : (パス記法) で構造化データとして展開します。
@@ -202,12 +163,12 @@ LIMIT 10;
       - VARIANT に格納された XML は XMLGET() / : / @ で要素・属性にアクセス
 ----------------------------------------------------------------------------------*/
 
--- 4.1 COPY INTO: XML ファイルを S3 外部ステージから VARIANT 列へ取り込み
+-- 3.1 COPY INTO: XML ファイルを S3 外部ステージから VARIANT 列へ取り込み
 COPY INTO fsi_zts_101.raw_trade.swift_messages_xml
     (message_id, received_at, message_type, payload, source_file)
 FROM (
     SELECT
-        METADATA$FILENAME || '-' || METADATA$FILE_ROW_NUMBER  AS message_id,
+        SPLIT_PART(METADATA$FILENAME, '/', -1) || '-' || METADATA$FILE_ROW_NUMBER  AS message_id,
         CURRENT_TIMESTAMP()                                    AS received_at,
         -- ファイル名から電文タイプを判定 (pacs_008 / camt_053)
         CASE
@@ -227,7 +188,7 @@ COPY INTO fsi_zts_101.raw_trade.swift_messages_xml
     (message_id, received_at, message_type, payload, source_file)
 FROM (
     SELECT
-        METADATA$FILENAME || '-' || METADATA$FILE_ROW_NUMBER,
+        SPLIT_PART(METADATA$FILENAME, '/', -1) || '-' || METADATA$FILE_ROW_NUMBER,
         CURRENT_TIMESTAMP(),
         CASE WHEN METADATA$FILENAME ILIKE '%pacs_008%' THEN 'pacs.008'
              WHEN METADATA$FILENAME ILIKE '%camt_053%' THEN 'camt.053'
@@ -245,7 +206,7 @@ ON_ERROR = 'CONTINUE';
 -- (上記実行後に パターン A と同じ COPY INTO を実行)
 --*/
 
--- 4.2 取り込み確認: 全件表示
+-- 3.2 取り込み確認: 全件表示
 SELECT
     message_id,
     message_type,
@@ -263,7 +224,7 @@ LIMIT 1;
 
 
 /*----------------------------------------------------------------------------------
- 4.3 pacs.008 の構造化展開 (XMLGET / パス記法)
+ 3.3 pacs.008 の構造化展開 (XMLGET / パス記法)
      -------------------------------------------------
      pacs.008 (FI to FI Customer Credit Transfer) は以下の構造:
 
@@ -357,7 +318,7 @@ WHERE message_type = 'pacs.008';
 
 
 /*----------------------------------------------------------------------------------
- 4.4 通貨別送金集計
+ 3.4 通貨別送金集計
      pacs.008 電文から通貨別の送金合計額・件数を集計します。
 ----------------------------------------------------------------------------------*/
 
@@ -390,7 +351,7 @@ ORDER BY total_amount DESC;
 
 
 /*----------------------------------------------------------------------------------
- 4.5 大口取引の検出 (しきい値: 10 億円相当)
+ 3.5 大口取引の検出 (しきい値: 10 億円相当)
      -------------------------------------------------
      AML (Anti-Money Laundering) / コンプライアンスの観点から、
      一定金額を超える送金をフラグ付けするクエリ例です。
@@ -436,7 +397,7 @@ ORDER BY settlement_amount DESC;
 
 
 /*----------------------------------------------------------------------------------
- 4.6 camt.053 口座明細の展開 (LATERAL FLATTEN)
+ 3.6 camt.053 口座明細の展開 (LATERAL FLATTEN)
      -------------------------------------------------
      camt.053 (Bank to Customer Statement) は 1 つの <Stmt> 内に
      複数の <Ntry> (明細行) を持ちます。
@@ -532,7 +493,7 @@ ORDER BY account_iban, debit_credit;
 
 
 /*----------------------------------------------------------------------------------
- 5. Snowpipe 構文紹介 (参考)
+ 4. Snowpipe 構文紹介 (参考)
     -------------------------------------------------
     Snowpipe は外部ステージ (S3 / GCS / Azure Blob) のイベント通知と連携し、
     新しいファイルが到着するたびに自動で COPY INTO を実行する仕組みです。
@@ -628,7 +589,7 @@ FILE_FORMAT = fsi_zts_101.public.csv_ff;
 
 
 /*----------------------------------------------------------------------------------
- 6. まとめ
+ 5. まとめ
     -------------------------------------------------
     このセクションで学んだこと:
 

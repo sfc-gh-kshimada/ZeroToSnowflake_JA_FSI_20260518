@@ -14,7 +14,6 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
   6. 動作確認 (Task 実行と履歴確認)
   7. まとめ (Snowpark WH vs SPCS の使い分け)
 
-所要時間: 約 15 分
 前提: setup.sql が実行済みで、データベース fsi_zts_101 とスキーマ raw_excel が存在すること
 ****************************************************************************************************/
 
@@ -38,21 +37,7 @@ ALTER SESSION SET query_tag = '{"origin":"sf_sit-is","name":"fsi_zts","version":
 -- ステージが存在することを確認
 SHOW STAGES LIKE 'excel_demo_stage' IN SCHEMA fsi_zts_101.raw_excel;
 
--- ■ アップロード方法 (いずれか一方を実施)
---
--- 【方法 A】 Snowsight UI からドラッグ & ドロップ
---   1. Snowsight 左メニュー > [Data] > [Databases]
---   2. fsi_zts_101 > raw_excel > Stages > EXCEL_DEMO_STAGE を開く
---   3. 右上 [+ Files] をクリックし、assets/excel/corporate_sales_data.xlsx をドラッグ & ドロップ
---   4. [Upload] で完了
---
--- 【方法 B】 SnowSQL / SnowCLI から PUT コマンド (ローカル環境がある場合)
---   PUT file://./assets/excel/corporate_sales_data.xlsx
---       @fsi_zts_101.raw_excel.excel_demo_stage
---       AUTO_COMPRESS = FALSE
---       OVERWRITE = TRUE;
-
--- アップロード結果を確認
+-- ステージにExcelファイルがあることを確認 (setup.sql で S3 外部ステージから格納済み)
 LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
 
@@ -365,7 +350,7 @@ FROM TABLE(information_schema.task_history(
 ORDER BY completed_time DESC
 LIMIT 5;
 
--- 取り込み後の件数確認 (2 回分ロードされているはず: 手動 + Task)
+-- 取り込み後の件数確認 (手動でデータ格納済みなので数は変わらない)
 SELECT
     COUNT(*)            AS total_rows,
     COUNT(DISTINCT deal_id) AS unique_deals,
@@ -381,7 +366,7 @@ GROUP BY source_file;
     本番環境では Task を SUSPEND しておくことを推奨します。
 --*/
 
--- ALTER TASK fsi_zts_101.raw_excel.load_excel_daily_task SUSPEND;
+ALTER TASK fsi_zts_101.raw_excel.load_excel_daily_task SUSPEND;
 
 
 /*--

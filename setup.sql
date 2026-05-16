@@ -20,6 +20,7 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
 ****************************************************************************************************/
 
 USE ROLE sysadmin;
+USE SECONDARY ROLES NONE;
 
 -- セッションにクエリタグを設定する (利用状況トラッキング用)
 ALTER SESSION SET query_tag = '{"origin":"sf_sit-is","name":"fsi_zts","version":{"major":1,"minor":0},"attributes":{"is_quickstart":1,"industry":"financial_services","vignette":"setup"}}';
@@ -99,14 +100,12 @@ CREATE ROLE IF NOT EXISTS fsi_admin           COMMENT = 'FSI ZTS 管理者ロー
 CREATE ROLE IF NOT EXISTS fsi_data_engineer   COMMENT = 'FSI ZTS データエンジニアロール';
 CREATE ROLE IF NOT EXISTS fsi_developer       COMMENT = 'FSI ZTS 開発者ロール';
 CREATE ROLE IF NOT EXISTS fsi_analyst         COMMENT = 'FSI ZTS アナリストロール';
-CREATE ROLE IF NOT EXISTS fsi_dataiku_svc     COMMENT = 'Dataiku Pushdown 用サービスアカウント想定ロール (デモ用)';
 
 -- ロール階層
 GRANT ROLE fsi_admin           TO ROLE sysadmin;
 GRANT ROLE fsi_data_engineer   TO ROLE fsi_admin;
 GRANT ROLE fsi_developer       TO ROLE fsi_data_engineer;
 GRANT ROLE fsi_analyst         TO ROLE fsi_data_engineer;
-GRANT ROLE fsi_dataiku_svc     TO ROLE fsi_admin;
 
 -- アカウント横断権限
 USE ROLE accountadmin;
@@ -122,36 +121,16 @@ GRANT USAGE ON DATABASE fsi_zts_101 TO ROLE fsi_admin;
 GRANT USAGE ON DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
 GRANT USAGE ON DATABASE fsi_zts_101 TO ROLE fsi_developer;
 GRANT USAGE ON DATABASE fsi_zts_101 TO ROLE fsi_analyst;
-GRANT USAGE ON DATABASE fsi_zts_101 TO ROLE fsi_dataiku_svc;
 
 GRANT USAGE ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
 GRANT USAGE ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
 GRANT USAGE ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
 GRANT USAGE ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_analyst;
-GRANT USAGE ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_dataiku_svc;
 
--- スキーマごとの ALL 権限 (admin / engineer / developer)
-GRANT ALL ON SCHEMA fsi_zts_101.raw_trade      TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_trade      TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_trade      TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_customer   TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_customer   TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_customer   TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_excel      TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_excel      TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.raw_excel      TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.harmonized     TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.harmonized     TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.harmonized     TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.analytics      TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.analytics      TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.analytics      TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.governance     TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.governance     TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.governance     TO ROLE fsi_developer;
-GRANT ALL ON SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_admin;
-GRANT ALL ON SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_data_engineer;
-GRANT ALL ON SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_developer;
+-- スキーマ権限: DB 内の全スキーマに一括付与
+GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
+GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
+GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
 
 -- ウェアハウス権限
 GRANT OWNERSHIP ON WAREHOUSE fsi_de_wh TO ROLE fsi_admin COPY CURRENT GRANTS;
@@ -167,28 +146,13 @@ GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_admin;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_data_engineer;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_developer;
 
--- 将来テーブル / ビューへの自動権限付与
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_trade    TO ROLE fsi_admin;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_trade    TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_trade    TO ROLE fsi_developer;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_customer TO ROLE fsi_admin;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_customer TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_customer TO ROLE fsi_developer;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_excel    TO ROLE fsi_admin;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_excel    TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE TABLES IN SCHEMA fsi_zts_101.raw_excel    TO ROLE fsi_developer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.harmonized   TO ROLE fsi_admin;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.harmonized   TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.harmonized   TO ROLE fsi_developer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.analytics    TO ROLE fsi_admin;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.analytics    TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.analytics    TO ROLE fsi_developer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.governance   TO ROLE fsi_admin;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.governance   TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.governance   TO ROLE fsi_developer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_admin;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_data_engineer;
-GRANT ALL ON FUTURE VIEWS  IN SCHEMA fsi_zts_101.semantic_layer TO ROLE fsi_developer;
+-- 将来作成されるオブジェクトへの自動権限付与 (DB レベル一括)
+GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
+GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
+GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
+GRANT ALL ON FUTURE VIEWS  IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
+GRANT ALL ON FUTURE VIEWS  IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
+GRANT ALL ON FUTURE VIEWS  IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
 
 -- マスキングポリシー / 行アクセスポリシー / タグ / DMF
 USE ROLE accountadmin;
@@ -243,11 +207,10 @@ STRIP_OUTER_ELEMENT = TRUE;
 -- サンプルデータは s3://sfse-handson-kshimada/fsi-zts/assets/ に事前配置済み
 CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.s3_assets_stage
 URL = 's3://sfse-handson-kshimada/fsi-zts/assets/'
-CREDENTIALS = ()
 COMMENT = 'サンプルデータ格納用 S3 外部ステージ';
 
--- データ形式別の内部ステージ (S3 → 内部ステージにコピー後、COPY INTO で取り込む)
--- 外部ステージが動作しない場合のバックアップとして以下3つを作成
+-- バックアップ用: データ形式別の内部ステージ (S3 → 内部ステージにコピー後、COPY INTO で取り込む)
+-- S3 外部ステージが動作しない場合のバックアップとして以下3つを作成
 CREATE OR REPLACE STAGE fsi_zts_101.raw_trade.csv_stage
 COMMENT = 'CSV ファイル取り込み用の内部ステージ'
 FILE_FORMAT = fsi_zts_101.public.csv_ff;
@@ -359,8 +322,7 @@ CREATE OR REPLACE TABLE fsi_zts_101.raw_trade.trade_transactions_csv_raw
 );
 
 -- 手動 Excel 取り込み先: 法人営業 (Corporate Sales) データ
--- セクション 2(b) で assets/excel/corporate_sales_data.xlsx (100 行) を
--- @raw_excel.excel_demo_stage に PUT → Snowpark Stored Procedure で取り込みます。
+-- セクション 2(b) で @raw_excel.excel_demo_stage に 格納 した excelファイルを→ Snowpark Stored Procedure で取り込みます。
 -- ユースケース: 法人向け営業活動データをより高度に 可視化・分析 
 CREATE OR REPLACE TABLE fsi_zts_101.raw_excel.corporate_sales
 (
@@ -647,24 +609,13 @@ CREATE OR REPLACE VIEW fsi_zts_101.harmonized.trade_orders_v
 COMMENT = '貿易取引と顧客マスタを結合した harmonized ビュー'
 AS
 SELECT
-    t.transaction_id,
-    t.trade_date,
-    t.settlement_date,
-    t.customer_id,
+    t.*,
     c.customer_name,
     c.contact_email,
     c.contact_phone,
-    c.region                AS customer_region,
+    c.region AS customer_region,
     c.customer_segment,
-    c.risk_rating,
-    t.counterparty_country,
-    t.transaction_type,
-    t.currency_code,
-    t.amount,
-    t.booking_branch,
-    t.instrument_type,
-    t.free_text_notes,
-    t.created_at
+    c.risk_rating
 FROM fsi_zts_101.raw_trade.trade_transactions t
 LEFT JOIN fsi_zts_101.raw_customer.customers c
     ON t.customer_id = c.customer_id;
@@ -704,44 +655,21 @@ CREATE OR REPLACE VIEW fsi_zts_101.semantic_layer.trade_orders_v
 COMMENT = 'Cortex Analyst 向けの整形済み貿易取引ビュー (PII 除外)'
 AS
 SELECT
-    transaction_id,
-    trade_date,
-    settlement_date,
-    customer_id::VARCHAR    AS customer_id,
-    customer_region,
-    customer_segment,
-    risk_rating,
-    counterparty_country,
-    transaction_type,
-    currency_code,
-    amount,
-    booking_branch,
-    instrument_type
+    transaction_id, trade_date, settlement_date,
+    customer_id::VARCHAR AS customer_id,
+    customer_region, customer_segment, risk_rating,
+    counterparty_country, transaction_type, currency_code,
+    amount, booking_branch, instrument_type
 FROM fsi_zts_101.harmonized.trade_orders_v;
 
--- 法人営業データを参照する harmonized ビュー (Section 2(b) 取り込み後の Excel + setup 投入分を統合)
+-- 法人営業データを参照する harmonized ビュー
 CREATE OR REPLACE VIEW fsi_zts_101.harmonized.corporate_sales_v
 COMMENT = '法人営業データを正規化した harmonized ビュー'
 AS
-SELECT
-    deal_id,
-    sales_rep,
-    customer_name,
-    industry,
-    company_size,
-    opportunity_amount,
-    stage,
-    region,
-    last_visit_date,
-    expected_close_date,
-    -- 受注フラグ (集計用)
+SELECT *,
     CASE WHEN stage = '受注' THEN 1 ELSE 0 END AS won_flag,
-    -- 失注フラグ
     CASE WHEN stage = '失注' THEN 1 ELSE 0 END AS lost_flag,
-    -- アクティブ案件フラグ (提案 / 見積)
-    CASE WHEN stage IN ('提案', '見積') THEN 1 ELSE 0 END AS active_flag,
-    loaded_at,
-    source_file
+    CASE WHEN stage IN ('提案', '見積') THEN 1 ELSE 0 END AS active_flag
 FROM fsi_zts_101.raw_excel.corporate_sales;
 
 -- 営業担当者別パフォーマンスサマリ (Section 3 / 4 演習用)
@@ -779,16 +707,8 @@ GROUP BY industry, company_size, region, stage;
 CREATE OR REPLACE VIEW fsi_zts_101.semantic_layer.corporate_sales_v
 COMMENT = 'Cortex Analyst 向けの法人営業ビュー (顧客名は除外)'
 AS
-SELECT
-    deal_id,
-    sales_rep,
-    industry,
-    company_size,
-    opportunity_amount,
-    stage,
-    region,
-    last_visit_date,
-    expected_close_date
+SELECT deal_id, sales_rep, industry, company_size,
+       opportunity_amount, stage, region, last_visit_date, expected_close_date
 FROM fsi_zts_101.harmonized.corporate_sales_v;
 
 USE ROLE securityadmin;
@@ -811,24 +731,11 @@ ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_JP';
 /*--
  8. Git リポジトリ統合 + S3 外部ステージからのファイル転送
     ────────────────────────────────────────────────────────────────
-    (A) GitHub リポジトリを Snowflake Workspaces に接続 → SQL ファイルを Snowsight で編集・実行 ← バックアップ手法
-    (B) S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO ← 本ハンズオンではこちらがメイン
+    (A) S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO ← 本ハンズオンではこちらがメイン
+    (B) GitHub リポジトリを Snowflake Workspaces に接続 → SQL ファイルを Snowsight で編集・実行 ← バックアップ手法
 --*/
 
--- 8.1 API Integration (GitHub HTTPS 用 — Workspaces 連携)
-CREATE OR REPLACE API INTEGRATION git_api_integration
-    API_PROVIDER = git_https_api
-    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kshimada/')
-    ENABLED = TRUE;
-
--- 8.2 Git Repository オブジェクト作成 (SQL ファイル用 — Workspaces から接続)
-CREATE OR REPLACE GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo
-    API_INTEGRATION = git_api_integration
-    ORIGIN = 'https://github.com/sfc-gh-kshimada/ZeroToSnowflake_JA_FSI_20260518.git';
-
-ALTER GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo FETCH;
-
--- 8.3 S3 外部ステージからデータを準備
+-- 8.1 S3 外部ステージからデータを準備
 -- CSV / JSON / XML: セクション 2(a) で外部ステージから直接 COPY INTO テーブル (内部ステージ不要)
 -- Excel: SP の get_stream が内部ステージを必要とするため、COPY FILES で内部ステージに転送
 
@@ -846,6 +753,19 @@ COPY FILES
 -- Excel 転送結果確認
 LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
+-- 8.2 API Integration (GitHub HTTPS 用 — Workspaces 連携)
+CREATE OR REPLACE API INTEGRATION git_api_integration
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kshimada/')
+    ENABLED = TRUE;
+
+-- 8.3 Git Repository オブジェクト作成 (SQL ファイル用 — Workspaces から接続)
+CREATE OR REPLACE GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo
+    API_INTEGRATION = git_api_integration
+    ORIGIN = 'https://github.com/sfc-gh-kshimada/ZeroToSnowflake_JA_FSI_20260518.git';
+
+ALTER GIT REPOSITORY fsi_zts_101.public.fsi_zts_repo FETCH;
+
 /*--
  9. ウェアハウスのスケールダウン (コスト最適化)
 --*/
@@ -856,6 +776,6 @@ ALTER WAREHOUSE fsi_de_wh SET WAREHOUSE_SIZE = 'XSmall';
 -- セットアップ完了
 SELECT '✓ FSI Zero To Snowflake セットアップが完了しました。' AS status,
        'fsi_zts_101 データベース・スキーマ・ロール・合成データ・S3連携・Git連携 が利用可能です。' AS message,
-       '次のステップ: Snowsight Workspaces で「From Git repository」から接続し、' ||
+       '次のステップ: Snowsight Workspaces で「From Git repository」から https://github.com/sfc-gh-kshimada/ZeroToSnowflake_JA_FSI_20260518 へ接続し、' ||
        'scripts/ 配下の SQL を順次実行してください。' ||
        'サンプルデータは S3 (s3://sfse-handson-kshimada/fsi-zts/assets/) から内部ステージに転送済みです。' AS next_step;
