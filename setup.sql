@@ -20,7 +20,8 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
 ****************************************************************************************************/
 
 USE ROLE sysadmin;
-USE SECONDARY ROLES NONE;
+-- ユーザーのデフォルトセカンダリロールを NONE に固定
+ALTER USER KSHIMADA SET DEFAULT_SECONDARY_ROLES = ();
 
 -- セッションにクエリタグを設定する (利用状況トラッキング用)
 ALTER SESSION SET query_tag = '{"origin":"sf_sit-is","name":"fsi_zts","version":{"major":1,"minor":0},"attributes":{"is_quickstart":1,"industry":"financial_services","vignette":"setup"}}';
@@ -132,6 +133,20 @@ GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
 GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
 GRANT ALL ON ALL SCHEMAS IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
 
+-- ステージ・フォーマット権限
+GRANT USAGE ON STAGE FSI_ZTS_101.RAW_TRADE.S3_ASSETS_STAGE TO ROLE FSI_ADMIN;
+GRANT USAGE ON STAGE FSI_ZTS_101.RAW_TRADE.S3_ASSETS_STAGE TO ROLE FSI_DATA_ENGINEER;
+GRANT READ, WRITE ON STAGE FSI_ZTS_101.RAW_EXCEL.EXCEL_DEMO_STAGE TO ROLE FSI_ADMIN;
+GRANT READ, WRITE ON STAGE FSI_ZTS_101.RAW_EXCEL.EXCEL_DEMO_STAGE TO ROLE FSI_DATA_ENGINEER;
+GRANT READ, WRITE ON STAGE FSI_ZTS_101.RAW_EXCEL.EXCEL_ARCHIVE_STAGE TO ROLE FSI_ADMIN;
+GRANT READ, WRITE ON STAGE FSI_ZTS_101.RAW_EXCEL.EXCEL_ARCHIVE_STAGE TO ROLE FSI_DATA_ENGINEER;
+GRANT USAGE ON FILE FORMAT FSI_ZTS_101.PUBLIC.CSV_FF TO ROLE FSI_ADMIN;
+GRANT USAGE ON FILE FORMAT FSI_ZTS_101.PUBLIC.CSV_FF TO ROLE FSI_DATA_ENGINEER;
+GRANT USAGE ON FILE FORMAT FSI_ZTS_101.PUBLIC.JSON_FF TO ROLE FSI_ADMIN;
+GRANT USAGE ON FILE FORMAT FSI_ZTS_101.PUBLIC.JSON_FF TO ROLE FSI_DATA_ENGINEER;
+GRANT USAGE  ON SCHEMA fsi_zts_101.harmonized              TO ROLE fsi_analyst;
+GRANT SELECT ON VIEW   fsi_zts_101.harmonized.trade_orders_v TO ROLE fsi_analyst;
+
 -- ウェアハウス権限
 GRANT OWNERSHIP ON WAREHOUSE fsi_de_wh TO ROLE fsi_admin COPY CURRENT GRANTS;
 GRANT ALL ON WAREHOUSE fsi_de_wh        TO ROLE fsi_admin;
@@ -146,7 +161,14 @@ GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_admin;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_data_engineer;
 GRANT ALL ON WAREHOUSE fsi_cortex_wh    TO ROLE fsi_developer;
 
+-- テーブル権限 (Section 3の StreamやDynamic Table作成で必要)
+USE ROLE SYSADMIN;
+ALTER TABLE fsi_zts_101.raw_trade.trade_transactions SET CHANGE_TRACKING = TRUE;
+ALTER TABLE fsi_zts_101.raw_customer.customers SET CHANGE_TRACKING = TRUE;
+
+
 -- 将来作成されるオブジェクトへの自動権限付与 (DB レベル一括)
+USE ROLE securityadmin;
 GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_admin;
 GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_data_engineer;
 GRANT ALL ON FUTURE TABLES IN DATABASE fsi_zts_101 TO ROLE fsi_developer;
@@ -744,6 +766,19 @@ LIST @fsi_zts_101.raw_excel.excel_demo_stage;
 
 USE ROLE sysadmin;
 ALTER WAREHOUSE fsi_de_wh SET WAREHOUSE_SIZE = 'XSmall';
+
+/*--
+ 10. Git リポジトリ連携 (API Integration + Git Repository)
+     Snowsight Workspaces の「From Git repository」機能に必要
+--*/
+USE ROLE accountadmin;
+
+-- GitHub API 統合
+CREATE OR REPLACE API INTEGRATION fsi_zts_git_api_integration
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kshimada/')
+    ENABLED = TRUE
+    COMMENT = 'FSI ZTS ハンズオン用 GitHub API 統合';
 
 -- セットアップ完了
 SELECT '✓ FSI Zero To Snowflake セットアップが完了しました。' AS status,
