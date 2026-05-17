@@ -275,6 +275,7 @@ LIMIT 20;
 
 -- raw_trade スキーマにテーブルを作成してみましょう → エラーになるはずです
 -- (コメントを外して実行し、権限エラーを確認してください)
+-- USE SECONDARY ROLES NONE;
 -- CREATE TABLE raw_trade.test_table (id NUMBER);
 
 /*
