@@ -6,20 +6,18 @@ Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
 セクション 3 - データ変換
-  Part A: Tasks + Streams (増分処理)                     ~20 分
+  Part A: Tasks + Streams (増分処理)                    
     1. Stream の作成
     2. 増分集計テーブルの作成と変換ロジック
     3. Task の作成 (MERGE INTO パターン)
     4. Task の実行と確認
-  Part B: Dynamic Tables (宣言的パイプライン)            ~25 分
+  Part B: Dynamic Tables (宣言的パイプライン)            
     5. Dynamic Table とは
     6. 貿易取引の Dynamic Table 作成
     7. 日次取引サマリの Dynamic Table
     8. DAG 可視化 (Snowsight 手順)
     9. 法人営業データの分析クエリ
-  Part C: まとめ                                          ~5 分
-   10. Task+Stream vs Dynamic Table 比較と推奨
-   11. クリーンアップ
+  Part C: まとめ                                          
 
 前提条件:
   - setup.sql を実行済み (データベース・スキーマ・テーブル・ビュー作成済み)
@@ -370,99 +368,12 @@ FROM TABLE(INFORMATION_SCHEMA.DYNAMIC_TABLE_REFRESH_HISTORY(
 ORDER BY refresh_start_time DESC
 LIMIT 10;
 
-/*----------------------------------------------------------------------------------
- 9. 法人営業データの分析クエリ (Dynamic Table の結果を活用)
-    -------------------------------------------------
-    Dynamic Table と既存のビューを活用して、法人営業データを分析します。
-    これらのクエリは Streamlit ダッシュボードや BI ツール の
-    バックエンドとしてそのまま使えるパターンです。
-----------------------------------------------------------------------------------*/
-
--- 9-1. 営業担当者別パイプライン分析
--- 各営業担当者のパイプライン状況を可視化
-SELECT
-    sales_rep                                                    AS "営業担当者",
-    COUNT(*)                                                     AS "案件数",
-    SUM(won_flag)                                                AS "受注件数",
-    SUM(lost_flag)                                               AS "失注件数",
-    SUM(active_flag)                                             AS "進行中件数",
-    ROUND(DIV0(SUM(won_flag),
-          NULLIF(SUM(won_flag) + SUM(lost_flag), 0)) * 100, 1)  AS "受注率_pct",
-    TO_CHAR(SUM(CASE WHEN stage = '受注'
-                     THEN opportunity_amount END), '999,999,999,999') AS "受注額",
-    TO_CHAR(SUM(CASE WHEN stage IN ('提案', '見積')
-                     THEN opportunity_amount END), '999,999,999,999') AS "パイプライン残額"
-FROM harmonized.corporate_sales_v
-GROUP BY sales_rep
-ORDER BY "受注率_pct" DESC;
-
--- 9-2. 業種別受注率分析
--- 業種ごとにどの程度の受注率があるかを把握
-SELECT
-    industry                                                      AS "業種",
-    COUNT(*)                                                      AS "総案件数",
-    SUM(won_flag)                                                 AS "受注件数",
-    SUM(lost_flag)                                                AS "失注件数",
-    ROUND(DIV0(SUM(won_flag),
-          NULLIF(SUM(won_flag) + SUM(lost_flag), 0)) * 100, 1)   AS "受注率_pct",
-    TO_CHAR(SUM(opportunity_amount), '999,999,999,999')           AS "総パイプライン額",
-    TO_CHAR(SUM(CASE WHEN stage = '受注'
-                     THEN opportunity_amount END), '999,999,999,999') AS "受注額",
-    TO_CHAR(AVG(opportunity_amount), '999,999,999,999')           AS "平均案件単価"
-FROM harmonized.corporate_sales_v
-GROUP BY industry
-ORDER BY "受注率_pct" DESC;
-
--- 9-3. 月次受注推移 (ウィンドウ関数: 累計合計)
--- expected_close_date を月単位で集計し、累積受注額を算出
--- ウィンドウ関数 SUM() OVER (ORDER BY ...) で累計を計算するパターン
-SELECT
-    close_month                                                    AS "受注予定月",
-    monthly_won_count                                              AS "月次受注件数",
-    TO_CHAR(monthly_won_amount, '999,999,999,999')                 AS "月次受注額",
-    SUM(monthly_won_count)
-        OVER (ORDER BY close_month
-              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)    AS "累計受注件数",
-    TO_CHAR(
-        SUM(monthly_won_amount)
-            OVER (ORDER BY close_month
-                  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
-        '999,999,999,999')                                         AS "累計受注額"
-FROM (
-    SELECT
-        DATE_TRUNC('month', expected_close_date)  AS close_month,
-        COUNT(*)                                  AS monthly_won_count,
-        SUM(opportunity_amount)                   AS monthly_won_amount
-    FROM harmonized.corporate_sales_v
-    WHERE stage = '受注'
-    GROUP BY close_month
-)
-ORDER BY close_month;
-
--- 9-4. 地域 × 企業規模のクロス集計 (ピボット分析)
-SELECT
-    region                                                AS "地域",
-    COUNT(CASE WHEN company_size = '大手' THEN 1 END)    AS "大手_件数",
-    COUNT(CASE WHEN company_size = '中堅' THEN 1 END)    AS "中堅_件数",
-    COUNT(CASE WHEN company_size = '中小' THEN 1 END)    AS "中小_件数",
-    TO_CHAR(SUM(CASE WHEN company_size = '大手'
-                     THEN opportunity_amount END), '999,999,999,999') AS "大手_金額",
-    TO_CHAR(SUM(CASE WHEN company_size = '中堅'
-                     THEN opportunity_amount END), '999,999,999,999') AS "中堅_金額",
-    TO_CHAR(SUM(CASE WHEN company_size = '中小'
-                     THEN opportunity_amount END), '999,999,999,999') AS "中小_金額"
-FROM harmonized.corporate_sales_v
-GROUP BY region
-ORDER BY region;
-
 
 /******************************************************************************
   まとめ                                           
  ******************************************************************************/
 
 /*----------------------------------------------------------------------------------
- 10. Task + Stream vs Dynamic Table: 比較と推奨
-    -------------------------------------------------
 
     ┌──────────────────────────────────────────────────────────────────────┐
     │   Snowflake 移行のメリット                    │
@@ -485,7 +396,7 @@ ORDER BY region;
 ----------------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------------
- 11. クリーンアップ
+ クリーンアップ
     -------------------------------------------------
     Task は明示的に SUSPEND しないとスケジュール通りに起動し続けます。
     Dynamic Table は DROP しない限りリフレッシュが継続されますが、

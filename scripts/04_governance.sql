@@ -28,10 +28,6 @@ USE DATABASE fsi_zts_101;
 
 /*----------------------------------------------------------------------------------
  0. 事前準備: アナリストロールにデモ用の SELECT 権限を付与
-    -------------------------------------------------
-    通常の運用では RAW ゾーンへのアナリスト直接アクセスは推奨しませんが、
-    このセクションではマスキング・行アクセスの「効果を体感する」ために
-    一時的に SELECT を付与します。
 ----------------------------------------------------------------------------------*/
 
 USE ROLE securityadmin;
@@ -44,7 +40,7 @@ GRANT SELECT ON TABLE fsi_zts_101.raw_customer.customers        TO ROLE fsi_anal
 GRANT SELECT ON TABLE fsi_zts_101.raw_trade.trade_transactions  TO ROLE fsi_analyst;
 GRANT SELECT ON TABLE fsi_zts_101.raw_excel.corporate_sales     TO ROLE fsi_analyst;
 
--- ウェアハウスの利用権限 (fsi_analyst_wh は setup.sql で付与済みだが、fsi_de_wh も追加)
+-- ウェアハウスの利用権限 
 GRANT USAGE ON WAREHOUSE fsi_de_wh TO ROLE fsi_analyst;
 
 USE ROLE fsi_admin;
@@ -257,7 +253,7 @@ LIMIT 5;
 USE ROLE fsi_admin;
 
 /*
-    シナリオ A: 拠点別データ分離 (booking_branch ベース)
+    拠点別データ分離 (booking_branch ベース)
     ─────────────────────────────────────────
     - fsi_admin / fsi_data_engineer → すべての拠点のデータを閲覧可
     - fsi_analyst → Tokyo 拠点のデータのみ閲覧可
@@ -312,48 +308,6 @@ SELECT DISTINCT booking_branch, COUNT(*) AS tx_count
 FROM fsi_zts_101.raw_trade.trade_transactions
 GROUP BY booking_branch
 ORDER BY booking_branch;
-
-
-/*
-    シナリオ B: 営業担当者別の案件アクセス制御 (参考パターン)
-    ─────────────────────────────────────────────────
-    本番環境で営業担当者ベースの行アクセスを実装する場合、
-    「Snowflake ユーザー名 → 営業担当者名」のマッピングテーブルを
-    使用するのが一般的です。
-
-    実装パターン (コンセプト):
-
-    -- 1. マッピングテーブルを作成
-    CREATE TABLE governance.user_salesrep_mapping (
-        snowflake_user  VARCHAR,
-        sales_rep       VARCHAR
-    );
-
-    -- 2. マッピングデータを投入
-    INSERT INTO governance.user_salesrep_mapping VALUES
-        ('SATO_USER',     'sato.taro'),
-        ('SUZUKI_USER',   'suzuki.hanako'),
-        ...;
-
-    -- 3. 行アクセスポリシーを作成
-    CREATE ROW ACCESS POLICY governance.salesrep_row_access
-        AS (rep VARCHAR) RETURNS BOOLEAN ->
-        CURRENT_ROLE() IN ('FSI_ADMIN', 'FSI_DATA_ENGINEER')
-        OR EXISTS (
-            SELECT 1 FROM governance.user_salesrep_mapping
-            WHERE snowflake_user = CURRENT_USER()
-              AND sales_rep = rep
-        );
-
-    -- 4. テーブルに適用
-    ALTER TABLE raw_excel.corporate_sales
-        ADD ROW ACCESS POLICY governance.salesrep_row_access
-        ON (sales_rep);
-
-    この設計により、AD グループ → Snowflake ロール のマッピングと組み合わせて
-    「誰が何を見られるか」をテーブル駆動で管理できます。
-*/
-
 
 /*----------------------------------------------------------------------------------
  4. Access History / Query History  ~10分

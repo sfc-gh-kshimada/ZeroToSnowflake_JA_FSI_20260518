@@ -111,11 +111,6 @@ LIMIT 10;
     XML 名前空間:
       - pacs.008: urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10
       - camt.053: urn:iso:std:iso:20022:tech:xsd:camt.053.001.08
-
-    ポイント:
-      - FILE_FORMAT の STRIP_OUTER_ELEMENT = TRUE により
-        ルート要素 <Document> が除去される
-      - VARIANT に格納された XML は XMLGET() / : / @ で要素・属性にアクセス
 ----------------------------------------------------------------------------------*/
 
 -- 3.1 COPY INTO: XML ファイルを S3 外部ステージから VARIANT 列へ取り込み

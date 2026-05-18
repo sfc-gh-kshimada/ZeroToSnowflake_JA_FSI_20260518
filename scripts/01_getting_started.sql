@@ -259,10 +259,9 @@ LIMIT 20;
 
 -- raw_trade のテーブルに直接アクセス → エラーになるはずです
 -- (コメントを外して実行し、権限エラーを確認してください)
-/*
-USE SECONDARY ROLES NONE;
-SELECT * FROM raw_trade.trade_transactions LIMIT 10;
-*/
+
+-- USE SECONDARY ROLES NONE;
+-- SELECT * FROM raw_trade.trade_transactions LIMIT 10;
 
 /*
     上の SELECT を実行すると、以下のようなエラーが表示されます:
