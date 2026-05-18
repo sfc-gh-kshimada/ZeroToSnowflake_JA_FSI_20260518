@@ -1,22 +1,18 @@
 /***************************************************************************************************
-Asset:        FSI Zero to Snowflake - データロード (S3 / Snowpipe / XML)
+Asset:        FSI Zero to Snowflake - データロード (S3 / XML)
 Version:      v1
 Audience:     金融サービス業界 (FSI) 向けハンズオン
 Disclaimer:   This is a demo asset using synthetic data. Not affiliated with any specific institution.
 Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
 セクション 2(a) - データロード
-  1. ステージの確認とファイル一覧
-  2. CSV からの COPY INTO
-  3. JSON からの COPY INTO (VARIANT)
-  4. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO ★メイン
-  5. Snowpipe 構文紹介 (参考)
-  6. まとめ
+  1. CSV からの COPY INTO
+  2. JSON からの COPY INTO (VARIANT)
+  3. XML (SWIFT MX 電文 ISO 20022) からの COPY INTO ★メイン
+  4. まとめ
 
 前提条件:
   - setup.sql を実行済み (データベース・スキーマ・テーブル・ステージ・ファイルフォーマット作成済み)
-  - assets/sample_data/swift_xml/ 配下の XML ファイルを
-    Snowsight UI からステージ @fsi_zts_101.raw_trade.xml_stage にアップロード済み
 ****************************************************************************************************/
 
 -- セッションにクエリタグを設定する (利用状況トラッキング用)
@@ -218,16 +214,16 @@ SELECT
         'EndToEndId'
     ):"$"::STRING                  AS end_to_end_id,
 
-    -- 修正: XMLGET で IntrBkSttlmAmt を取り出す
-XMLGET(
-    XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
-    'IntrBkSttlmAmt'
-):"$"::NUMBER(18,2)    AS settlement_amount,
-
-XMLGET(
-    XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
-    'IntrBkSttlmAmt'
-):"@Ccy"::STRING       AS currency,
+    -- XMLGET で IntrBkSttlmAmt を取り出す
+    XMLGET(
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
+        'IntrBkSttlmAmt'
+    ):"$"::NUMBER(18,2)    AS settlement_amount,
+    
+    XMLGET(
+        XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'),
+        'IntrBkSttlmAmt'
+    ):"@Ccy"::STRING       AS currency,
 
     XMLGET(
         XMLGET(XMLGET(XMLGET(payload, 'FIToFICstmrCdtTrf'), 'CdtTrfTxInf'), 'Dbtr'),
@@ -429,103 +425,7 @@ ORDER BY account_iban, debit_credit;
 
 
 /*----------------------------------------------------------------------------------
- 4. Snowpipe 構文紹介 (参考)
-    -------------------------------------------------
-    Snowpipe は外部ステージ (S3 / GCS / Azure Blob) のイベント通知と連携し、
-    新しいファイルが到着するたびに自動で COPY INTO を実行する仕組みです。
-
-    構成要素:
-      1. 外部ステージ (S3 バケット + Storage Integration)
-      2. PIPE オブジェクト (COPY INTO 文を内包 + AUTO_INGEST = TRUE)
-      3. S3 Event Notification → SQS → Snowpipe (自動トリガー)
-
-    ★ 以下は構文のみ確認してください (実行しません)。
-      ハンズオン参加者ごとに個別の S3 イベント通知設定が必要なため、
-      今回は PIPE の定義構文と運用コマンドの紹介にとどめます。
-
-    金融ユースケース:
-      - S3 に到着する新規取引ファイルを数秒〜数分以内に自動取り込み
-      - 既存の Glue ETL → Snowpipe に置き換えて運用コスト削減
-      - ファイル到着からテーブル反映までのラグを最小化
-
-    公式ドキュメント:
-      https://docs.snowflake.com/ja/user-guide/data-load-snowpipe-intro
-----------------------------------------------------------------------------------*/
-
--- 参考: Snowpipe の定義例 (実行しません — 構文確認用)
-/*
-CREATE OR REPLACE PIPE fsi_zts_101.raw_trade.trade_csv_pipe
-    AUTO_INGEST = TRUE
-    COMMENT = 'S3 から CSV バッチファイルを自動取り込みする Snowpipe'
-AS
-COPY INTO fsi_zts_101.raw_trade.trade_transactions_csv_raw
-    (transaction_id, trade_date, settlement_date, customer_id,
-     counterparty_country, transaction_type, currency_code, amount,
-     booking_branch, instrument_type, free_text_notes, source_file)
-FROM (
-    SELECT
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        METADATA$FILENAME
-    FROM @fsi_zts_101.raw_trade.s3_assets_stage/snowpipe_csv/
-)
-FILE_FORMAT = fsi_zts_101.public.csv_ff;
-*/
-
-/*--
-    Snowpipe 運用コマンド (参考):
-
-    -- Snowpipe のステータス確認
-    SELECT SYSTEM$PIPE_STATUS('fsi_zts_101.raw_trade.trade_csv_pipe');
-
-    -- 手動 REFRESH (S3 イベント通知なしでファイルを検出・取り込み)
-    ALTER PIPE fsi_zts_101.raw_trade.trade_csv_pipe REFRESH;
-
-    -- Snowpipe の通知チャネル ARN 確認 (S3 Event Notification に設定する値)
-    SHOW PIPES LIKE 'trade_csv_pipe' IN SCHEMA fsi_zts_101.raw_trade;
-
-    -- 取り込み履歴の確認
-    SELECT * FROM TABLE(information_schema.copy_history(
-        TABLE_NAME => 'fsi_zts_101.raw_trade.trade_transactions_csv_raw',
-        START_TIME => DATEADD(hour, -1, CURRENT_TIMESTAMP())
-    )) ORDER BY LAST_LOAD_TIME DESC;
-
-    -- Snowpipe の停止
-    ALTER PIPE fsi_zts_101.raw_trade.trade_csv_pipe SET PIPE_EXECUTION_PAUSED = TRUE;
---*/
-
-/*--
-    ★ 本番環境での Snowpipe セットアップ手順 (参考):
-
-    1. Storage Integration を作成 (IAM Role ベース)
-       CREATE STORAGE INTEGRATION s3_integration
-         TYPE = EXTERNAL_STAGE
-         STORAGE_PROVIDER = 'S3'
-         ENABLED = TRUE
-         STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/snowflake-role'
-         STORAGE_ALLOWED_LOCATIONS = ('s3://your-bucket/path/');
-
-    2. 外部ステージを Storage Integration 付きで作成
-       CREATE STAGE your_stage
-         URL = 's3://your-bucket/path/'
-         STORAGE_INTEGRATION = s3_integration;
-
-    3. Snowpipe を作成 (AUTO_INGEST = TRUE)
-
-    4. SHOW PIPES で notification_channel (SQS ARN) を取得
-
-    5. AWS Console → S3 → Event notifications で以下を設定:
-       - Event type: s3:ObjectCreated:*
-       - Prefix: your/path/
-       - Destination: SQS queue (上記 ARN)
-
-    6. 設定完了後、S3 にファイルを配置すれば自動で Snowpipe がトリガー
-
-    参考: https://docs.snowflake.com/ja/user-guide/data-load-snowpipe-auto-s3
---*/
-
-
-/*----------------------------------------------------------------------------------
- 5. まとめ
+ 4. まとめ
     -------------------------------------------------
     このセクションで学んだこと:
 
@@ -547,10 +447,6 @@ FILE_FORMAT = fsi_zts_101.public.csv_ff;
       - ISO 20022 SWIFT MX 電文 (pacs.008 / camt.053) の解析
       - 大口取引の検出 (AML / コンプライアンス)
       - 通貨別集計・入出金分析
-
-    [Snowpipe (参考)]
-      - AUTO_INGEST = TRUE による S3 イベント駆動の自動取り込み
-      - PIPE オブジェクトの構文と運用コマンド
 
     次のセクション: 2(b) Excel からのデータロード
 ----------------------------------------------------------------------------------*/

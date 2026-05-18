@@ -23,7 +23,7 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
 前提条件:
   - setup.sql を実行済み (データベース・スキーマ・テーブル・ビュー作成済み)
-  - セクション 2 のデータロードが完了していること (raw_trade.trade_transactions に 50,000 件)
+  - セクション 2 のデータロードが完了していること
 
 銀行のオンプレバッチサーバで夜間に実行していた集計処理を、Snowflake に移行する
 シナリオで、命令的 (Task + Stream) と宣言的 (Dynamic Table) の2つのアプローチを

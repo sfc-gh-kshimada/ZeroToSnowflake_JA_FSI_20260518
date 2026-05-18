@@ -8,14 +8,14 @@ Copyright(c): 2026 Snowflake Inc. All rights reserved.
 
 Snowflake 入門 ― Getting Started
 
-  1. Snowflake UI ツアー (説明のみ)
+  1. Snowflake UI ツアー
   2. 仮想ウェアハウスの探索
   3. クエリ結果キャッシュ
   4. RBAC (ロールベースアクセス制御)
   5. ゼロコピークローニング
   6. タイムトラベル (Time Travel)
   7. リソースモニター / バジェット
-  8. ユニバーサルサーチ (説明のみ)
+  8. ユニバーサルサーチ
   9. まとめ
 
 ****************************************************************************************************/
@@ -45,7 +45,7 @@ USE WAREHOUSE fsi_de_wh;
     - ワークシートでは上部のドロップダウンからも切り替え可能です
 
   ■ 本日使用するデータベース: fsi_zts_101
-    - raw_trade      : 貿易取引の生データ (50,000 件)
+    - raw_trade      : 貿易取引の生データ
     - raw_customer   : 顧客マスタ・参照データ
     - raw_excel      : Excel 取り込みデータ
     - harmonized     : 結合済みの中間レイヤ
@@ -123,9 +123,6 @@ ORDER BY total_amount DESC;
     - Tokyo / NewYork / London / Singapore の 4 拠点
     - IMPORT / EXPORT / REMITTANCE の 3 種別
     が表示されているはずです。
-
-    右側の「Query Details」パネルで実行時間 (Duration) を確認してください。
-    Medium ウェアハウスで実行した時間を覚えておきましょう。
 */
 
 -- コスト最適化のため、ウェアハウスを XSmall に戻します
@@ -262,8 +259,10 @@ LIMIT 20;
 
 -- raw_trade のテーブルに直接アクセス → エラーになるはずです
 -- (コメントを外して実行し、権限エラーを確認してください)
--- USE SECONDARY ROLES NONE;
--- SELECT * FROM raw_trade.trade_transactions LIMIT 10;
+/*
+USE SECONDARY ROLES NONE;
+SELECT * FROM raw_trade.trade_transactions LIMIT 10;
+*/
 
 /*
     上の SELECT を実行すると、以下のようなエラーが表示されます:
@@ -325,7 +324,7 @@ CREATE TABLE raw_trade.trade_transactions_clone
 SELECT COUNT(*) AS clone_count FROM raw_trade.trade_transactions_clone;
 
 /*
-    50,000 件のデータが瞬時にコピーされました。
+    大量のデータが瞬時にコピーされました。
     しかし、この時点では追加ストレージは「ゼロ」です。
 
     TABLE_STORAGE_METRICS ビューで確認することもできます:

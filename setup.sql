@@ -740,12 +740,12 @@ ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_JP';
 /*--
  8. S3 外部ステージからのファイル転送
     ────────────────────────────────────────────────────────────────
-    S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO ← 本ハンズオンではこちらがメイン
+    S3 外部ステージからサンプルデータを内部ステージに転送 → セクション 2 で COPY INTO
 --*/
 
 -- S3 外部ステージからデータを準備
 -- CSV / JSON / XML: セクション 2(a) で外部ステージから直接 COPY INTO テーブル (内部ステージ不要)
--- Excel: SP の get_stream が内部ステージを必要とするため、COPY FILES で内部ステージに転送
+-- Excel: SP の get_stream が内部ステージを必要とするため、COPY FILES で内部ステージに転送 (get により外部ステージからもファイル取得可能)
 
 -- S3 外部ステージの内容確認
 LIST @fsi_zts_101.raw_trade.s3_assets_stage/swift_xml/;

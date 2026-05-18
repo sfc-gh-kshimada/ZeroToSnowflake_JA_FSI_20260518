@@ -14,7 +14,7 @@ FSI 向け Zero to Snowflake ハンズオンへようこそ。
 - Getting Started
   - Snowflake の基礎 (UI / Warehouse / RBAC / Time Travel)
 - データロード
-  - (a) S3 → COPY INTO / Snowpipe (CSV / JSON / XML)
+  - (a) S3 → COPY INTO (CSV / JSON / XML)
   - (b) Excel → Snowpark Stored Procedure
 - データ変換 | Dynamic Tables / Tasks + Streams 
 - ガバナンス | Masking / Row Access / Access History / Trust Center
@@ -23,7 +23,7 @@ FSI 向け Zero to Snowflake ハンズオンへようこそ。
 ### 構築するもの
 
 - **データプラットフォーム**: 貿易取引・顧客・SWIFT MX 風電文・Excel 取り込みデータを統合した分析基盤
-- **データパイプライン**: COPY INTO / Snowpipe による自動取り込み + Dynamic Tables による宣言的変換
+- **データパイプライン**: COPY INTO による自動取り込み + Dynamic Tables による宣言的変換
 - **ガバナンスフレームワーク**: タグベースマスキング / 行アクセスポリシー / Access History
 - **AI レイヤー**: Cortex AI 関数 / Cortex Search / Cortex Analyst を活用した会話形式分析
 
@@ -64,5 +64,5 @@ FSI 向け Zero to Snowflake ハンズオンへようこそ。
 ---
 
 **License**: 本資料は ZeroToSnowflake (https://github.com/Snowflake-Labs/sfquickstarts) を派生元とします。
-**Last Updated**: 2026-05-16
+**Last Updated**: 2026-05-18
 **Disclaimer**: 本資料は FSI 向けデモアセットです。データはすべて合成データであり、特定の金融機関・企業を指すものではありません。

@@ -42,10 +42,10 @@ ALTER SESSION SET query_tag = '{"origin":"sf_sit-is","name":"fsi_zts","version":
     │ AI_CLASSIFY                  │ テキスト/画像/ドキュメントをカテゴリに分類   │
     │                              │ (CLASSIFY_TEXT の後継、マルチラベル対応)     │
     │ AI_SENTIMENT                 │ テキストの感情スコア (-1.0 〜 1.0)           │
-    │ AI_COMPLETE                   │ LLM によるテキスト生成 (プロンプト応答)      │
-    │ AI_SUMMARIZE   │ テキスト要約                                 │
-    │ AI_TRANSLATE   │ 翻訳 (多言語対応)                            │
-    │ AI_EMBED   │ テキストのベクトル埋め込み生成               │
+    │ AI_COMPLETE                  │ LLM によるテキスト生成 (プロンプト応答)      │
+    │ AI_SUMMARIZE                 │ テキスト要約                                 │
+    │ AI_TRANSLATE                 │ 翻訳 (多言語対応)                            │
+    │ AI_EMBED                     │ テキストのベクトル埋め込み生成               │
     │ Cortex Search Service        │ セマンティック全文検索 (RAG の基盤)           │
     │ Cortex Analyst               │ 自然言語 BI (セマンティックモデル経由)       │
     └──────────────────────────────┴──────────────────────────────────────────────┘
@@ -560,7 +560,7 @@ DESC SEMANTIC VIEW fsi_zts_101.semantic_layer.fsi_trade_analytics;
       - RAG (Retrieval-Augmented Generation) の検索バックエンドとして活用可能
 
     [Cortex Analyst]
-      - セマンティックモデル (YAML) を定義 → 自然言語で BI
+      - セマンティックビュー を定義 → 自然言語でビジネス分析
       - SQL を知らないビジネスユーザーでもデータに質問可能
       - セマンティックレイヤーのビュー (PII 除外) を参照
 
